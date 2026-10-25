@@ -118,6 +118,10 @@ MESSAGES: dict[str, dict[Locale, str]] = {
         Locale.UK: "Невідомий часовий пояс",
         Locale.EN: "Unknown time zone",
     },
+    "invalid_thresholds": {
+        Locale.UK: "Поріг тривоги не може перевищувати поріг підтвердженої тривоги",
+        Locale.EN: "The alarm threshold cannot exceed the confirmed threshold",
+    },
     "zone_mismatch": {
         Locale.UK: "Зона належить іншому об'єкту",
         Locale.EN: "The zone belongs to another facility",

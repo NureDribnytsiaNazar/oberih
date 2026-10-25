@@ -28,6 +28,7 @@ from app.models.enums import (
     ScheduleAction,
     ZoneType,
 )
+from app.models.users import User
 
 
 class Facility(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -129,6 +130,7 @@ class FacilityMember(UUIDPrimaryKeyMixin, Base):
     )
 
     facility: Mapped[Facility] = relationship(back_populates="members")
+    user: Mapped[User] = relationship()
 
 
 class Zone(UUIDPrimaryKeyMixin, Base):

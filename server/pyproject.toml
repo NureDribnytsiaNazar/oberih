@@ -18,3 +18,5 @@ exclude = ["alembic/versions/", ".venv/"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# Попередження сторонньої бібліотеки тестового клієнта, на код не впливає.
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient`"]
