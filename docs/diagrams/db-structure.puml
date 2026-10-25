@@ -1,0 +1,323 @@
+@startuml db-structure
+' Згенеровано scripts/gen_db_diagram.py — не редагувати вручну.
+!pragma layout smetana
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam defaultFontName Arial
+title Структура бази даних «Оберіг» (PostgreSQL 16)
+
+entity "tariff_plans" as tariff_plans {
+  * id : uuid <<PK>>
+  --
+  * code : varchar(32) <<UK>>
+  * name : varchar(64)
+  * price_month : numeric(10, 2)
+  * max_facilities : integer
+  * archive_days : integer
+  * email_notifications : boolean
+  * guest_access : boolean
+  * false_alarm_stats : boolean
+  * incident_timeline : boolean
+  * api_access : boolean
+}
+
+entity "users" as users {
+  * id : uuid <<PK>>
+  --
+  * email : varchar(254) <<UK>>
+  * password_hash : varchar(255)
+  * full_name : varchar(128)
+  * locale : enum locale
+  * timezone : varchar(64)
+  * measurement_system : enum measurementsystem
+    totp_secret : varchar(64)
+  * totp_enabled : boolean
+  * is_platform_admin : boolean
+  * is_active : boolean
+  * tariff_plan_id : uuid <<FK>>
+    privacy_consent_at : timestamp with time zone
+    anonymized_at : timestamp with time zone
+  * created_at : timestamp with time zone
+  * updated_at : timestamp with time zone
+}
+
+entity "audit_log" as audit_log {
+  * id : bigint <<PK>>
+  --
+    user_id : uuid <<FK>>
+  * action : varchar(64)
+    entity_type : varchar(64)
+    entity_id : varchar(64)
+    ip_address : varchar(45)
+    details : jsonb
+  * created_at : timestamp with time zone
+}
+
+entity "backups" as backups {
+  * id : uuid <<PK>>
+  --
+    created_by : uuid <<FK>>
+  * kind : enum backupkind
+  * status : enum backupstatus
+  * file_name : varchar(255)
+    size_bytes : bigint
+    sha256 : varchar(64)
+  * created_at : timestamp with time zone
+}
+
+entity "facilities" as facilities {
+  * id : uuid <<PK>>
+  --
+  * name : varchar(128)
+    address : varchar(255)
+  * timezone : varchar(64)
+  * owner_id : uuid <<FK>>
+  * mode : enum facilitymode
+  * mode_changed_at : timestamp with time zone
+  * created_at : timestamp with time zone
+  * updated_at : timestamp with time zone
+}
+
+entity "push_tokens" as push_tokens {
+  * id : uuid <<PK>>
+  --
+  * user_id : uuid <<FK>>
+  * token : varchar(512) <<UK>>
+  * platform : enum pushplatform
+  * created_at : timestamp with time zone
+}
+
+entity "refresh_tokens" as refresh_tokens {
+  * id : uuid <<PK>>
+  --
+  * user_id : uuid <<FK>>
+  * token_hash : varchar(64) <<UK>>
+  * expires_at : timestamp with time zone
+    revoked_at : timestamp with time zone
+    user_agent : varchar(255)
+  * created_at : timestamp with time zone
+}
+
+entity "arming_log" as arming_log {
+  * id : bigint <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+    user_id : uuid <<FK>>
+  * from_mode : enum arming_from_mode
+  * to_mode : enum arming_to_mode
+  * source : enum actionsource
+    auth_method : enum authmethod
+    ip_address : varchar(45)
+  * created_at : timestamp with time zone
+}
+
+entity "facility_members" as facility_members {
+  * id : uuid <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+  * user_id : uuid <<FK>>
+  * role : enum facilityrole
+    access_from : timestamp with time zone
+    access_until : timestamp with time zone
+  * created_at : timestamp with time zone
+}
+
+entity "facility_settings" as facility_settings {
+  * facility_id : uuid <<PK, FK>>
+  --
+  * exit_delay_s : integer
+  * entry_delay_s : integer
+  * duplicate_window_s : integer
+  * confirm_window_s : integer
+  * poll_interval_s : integer
+  * missed_polls_limit : integer
+  * weight_reed : numeric(3, 2)
+  * weight_pir : numeric(3, 2)
+  * weight_tamper : numeric(3, 2)
+  * alarm_threshold : numeric(3, 2)
+  * confirmed_threshold : numeric(3, 2)
+  * far_window_days : integer
+  * far_min_alarms : integer
+  * far_threshold : numeric(3, 2)
+}
+
+entity "nodes" as nodes {
+  * id : uuid <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+  * name : varchar(128)
+  * serial : varchar(64) <<UK>>
+    device_token_hash : varchar(64) <<UK>>
+    firmware_version : varchar(32)
+  * status : enum nodestatus
+    last_seen_at : timestamp with time zone
+  * last_seq : bigint
+    commissioned_at : timestamp with time zone
+  * created_at : timestamp with time zone
+}
+
+entity "notification_settings" as notification_settings {
+  * id : uuid <<PK>>
+  --
+  * user_id : uuid <<FK>>
+  * facility_id : uuid <<FK>>
+  * channel : enum notificationchannel
+  * enabled : boolean
+  * min_level : enum notification_min_level
+}
+
+entity "schedules" as schedules {
+  * id : uuid <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+  * name : varchar(128)
+  * action : enum scheduleaction
+  * days_mask : smallint
+  * local_time : time without time zone
+  * enabled : boolean
+}
+
+entity "test_scenarios" as test_scenarios {
+  * id : uuid <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+  * name : varchar(128)
+    description : text
+  * steps : jsonb
+  * expected : jsonb
+    created_by : uuid <<FK>>
+  * created_at : timestamp with time zone
+}
+
+entity "zones" as zones {
+  * id : uuid <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+  * name : varchar(128)
+  * zone_type : enum zonetype
+}
+
+entity "alarms" as alarms {
+  * id : uuid <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+    zone_id : uuid <<FK>>
+  * level : enum alarmlevel
+  * status : enum alarmstatus
+  * confidence : numeric(4, 2)
+    is_false : boolean
+  * opened_at : timestamp with time zone
+    closed_at : timestamp with time zone
+}
+
+entity "certificates" as certificates {
+  * id : uuid <<PK>>
+  --
+    node_id : uuid <<FK>>
+  * subject : varchar(255)
+  * serial_number : varchar(64) <<UK>>
+  * status : enum certificatestatus
+  * not_before : timestamp with time zone
+  * not_after : timestamp with time zone
+  * pem : varchar
+  * created_at : timestamp with time zone
+    revoked_at : timestamp with time zone
+}
+
+entity "scenario_runs" as scenario_runs {
+  * id : uuid <<PK>>
+  --
+  * scenario_id : uuid <<FK>>
+  * passed : boolean
+  * actual : jsonb
+  * started_at : timestamp with time zone
+}
+
+entity "sensors" as sensors {
+  * id : uuid <<PK>>
+  --
+  * node_id : uuid <<FK>>
+  * zone_id : uuid <<FK>>
+  * name : varchar(128)
+  * sensor_type : enum sensortype
+  * channel : smallint
+  * is_enabled : boolean
+}
+
+entity "alarm_acknowledgements" as alarm_acknowledgements {
+  * id : uuid <<PK>>
+  --
+  * alarm_id : uuid <<FK>>
+  * user_id : uuid <<FK>>
+  * action : enum ackaction
+  * auth_method : enum authmethod
+    comment : text
+  * created_at : timestamp with time zone
+}
+
+entity "events" as events {
+  * id : bigint <<PK>>
+  --
+  * facility_id : uuid <<FK>>
+  * node_id : uuid <<FK>>
+    sensor_id : uuid <<FK>>
+  * event_type : enum eventtype
+    seq : bigint
+  * occurred_at : timestamp with time zone
+  * received_at : timestamp with time zone
+    payload : jsonb
+}
+
+entity "incident_summaries" as incident_summaries {
+  * id : uuid <<PK>>
+  --
+  * alarm_id : uuid <<FK>>
+  * language : varchar(8)
+  * facts : text
+  * assumptions : text
+  * model_name : varchar(64)
+    created_by : uuid <<FK>>
+  * created_at : timestamp with time zone
+}
+
+entity "alarm_events" as alarm_events {
+  * alarm_id : uuid <<PK, FK>>
+  * event_id : bigint <<PK, FK>>
+  --
+}
+
+alarm_acknowledgements }o--|| alarms
+alarm_acknowledgements }o--|| users
+alarm_events }o--|| alarms
+alarm_events }o--|| events
+alarms }o--o| zones
+alarms }o--|| facilities
+arming_log }o--o| users
+arming_log }o--|| facilities
+audit_log }o--o| users
+backups }o--o| users
+certificates }o--o| nodes
+events }o--o| sensors
+events }o--|| facilities
+events }o--|| nodes
+facilities }o--|| users
+facility_members }o--|| facilities
+facility_members }o--|| users
+facility_settings }o--|| facilities
+incident_summaries }o--o| users
+incident_summaries }o--|| alarms
+nodes }o--|| facilities
+notification_settings }o--|| facilities
+notification_settings }o--|| users
+push_tokens }o--|| users
+refresh_tokens }o--|| users
+scenario_runs }o--|| test_scenarios
+schedules }o--|| facilities
+sensors }o--|| nodes
+sensors }o--|| zones
+test_scenarios }o--o| users
+test_scenarios }o--|| facilities
+users }o--|| tariff_plans
+zones }o--|| facilities
+@enduml

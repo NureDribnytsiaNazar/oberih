@@ -210,14 +210,36 @@ erDiagram
 | Режими охорони, зокрема «Вдома» (ФМ-1) | `facilities.mode`: `disarmed`, `exit_delay`, `armed_away`, `armed_home`, `entry_delay`, `alarm` |
 | Параметри з розділу 2.2.2 (вікна, ваги, пороги) | `facility_settings`, значення за замовчуванням збігаються з документом |
 | Усунення дублікатів (ключ «вузол — датчик — тип — номер») | Унікальне обмеження `uq_events_dedup_key` у `events` |
-| Журнал постановки й зняття лише для додавання (ПК-3) | `arming_log`, `alarm_acknowledgements`, `audit_log`; заборона зміни й видалення — тригерами в міграції |
+| Журнал постановки й зняття лише для додавання (ПК-3) | `arming_log`, `alarm_acknowledgements`, `audit_log`; заборона зміни й видалення — тригерами в міграції `0002` |
 | Індекс достовірності й тривоги | `alarms.confidence`, `alarms.level`; зв'язок із подіями через `alarm_events` |
 | Статистика хибних спрацювань (FAR) | `alarms.is_false` та `alarm_events` → `events.sensor_id`; обчислюється запитом |
 | Ролі й гостьовий доступ у часових межах | `facility_members.role`, `access_from`, `access_until` |
-| Тарифні плани з обмеженнями (ВО-8) | `tariff_plans`, початкові дані додаються міграцією |
+| Тарифні плани з обмеженнями (ВО-8) | `tariff_plans`, початкові дані (basic, standard, professional) додаються міграцією `0002` |
 | Хронологія інциденту (факти й припущення окремо) | `incident_summaries.facts` і `.assumptions` |
 | Відтворення тестових сценаріїв | `test_scenarios`, `scenario_runs` |
 | Адміністрування: резервні копії, сертифікати | `backups`, `certificates` |
 | Захист даних (GDPR): видалення й експорт | `users.anonymized_at`, `users.privacy_consent_at`, `audit_log` |
 | Інтернаціоналізація | `users.locale`, `users.timezone`, `users.measurement_system`; час у UTC |
 | Недоступність вузла | `nodes.status`, `nodes.last_seen_at`, події `node_offline` та `node_online` |
+
+## Міграції
+
+| Міграція | Зміст |
+|---|---|
+| `0001_initial_schema` | 23 таблиці, первинні й зовнішні ключі, обмеження CHECK, індекси |
+| `0002_tariffs_triggers_indexes` | Тарифні плани; тригер `forbid_log_change` для `arming_log`, `alarm_acknowledgements`, `audit_log`; індекси `ix_alarms_facility_status`, `ix_audit_log_entity`; унікальний `uq_nodes_device_token_hash` |
+
+Повна структура таблиць зі стовпцями й типами — на діаграмі
+[`diagrams/db-structure.png`](diagrams/db-structure.png). Її генерує скрипт
+`server/scripts/gen_db_diagram.py` з моделей, тому вона завжди відповідає коду.
+
+### Індекси під типові запити
+
+| Запит | Індекс |
+|---|---|
+| Стрічка подій об'єкта за часом | `ix_events_facility_occurred (facility_id, occurred_at)` |
+| Події датчика за часом (статистика FAR) | `ix_events_sensor_occurred (sensor_id, occurred_at)` |
+| Тривоги об'єкта за часом і за станом | `ix_alarms_facility_opened`, `ix_alarms_facility_status` |
+| Журнал охорони об'єкта | `ix_arming_log_facility_created (facility_id, created_at)` |
+| Аудит щодо сутності | `ix_audit_log_entity (entity_type, entity_id)` |
+| Автентифікація вузла за токеном | `uq_nodes_device_token_hash` |

@@ -1,0 +1,93 @@
+@startuml use-case
+' Діаграма прецедентів серверної частини «Оберіг» (ЛБ2).
+' Права ролей відповідають таблиці 7 Vision & Scope.
+!pragma layout smetana
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+title Діаграма прецедентів програмної системи «Оберіг»
+
+actor "Користувач" as User
+actor "Гість" as Guest
+actor "Член родини" as Family
+actor "Власник" as Owner
+actor "Монтажник" as Installer
+actor "Адміністратор\nплатформи" as Admin
+actor "IoT-вузол\n(ESP32)" as Node <<system>>
+
+Guest --|> User
+Family --|> Guest
+Owner --|> Family
+Installer --|> User
+Admin --|> User
+
+rectangle "Серверна частина «Оберіг» (REST API /api/v1)" {
+  package "Обліковий запис" {
+    usecase "Зареєструватися\n(згода на обробку даних)" as UC_Register
+    usecase "Увійти" as UC_Login
+    usecase "Увімкнути двофакторну\nавтентифікацію (TOTP)" as UC_Totp
+    usecase "Змінити профіль,\nмову, часовий пояс" as UC_Profile
+    usecase "Експортувати\nперсональні дані" as UC_Export
+    usecase "Видалити обліковий запис\n(знеособлення)" as UC_Delete
+  }
+
+  package "Охорона" {
+    usecase "Переглянути події,\nтривоги, журнал охорони" as UC_ViewEvents
+    usecase "Поставити на охорону\n(повна / «Вдома»)" as UC_Arm
+    usecase "Зняти з охорони" as UC_Disarm
+    usecase "Підтвердити тривогу,\nпозначити хибною, закрити" as UC_Ack
+    usecase "Повторно підтвердити дію\n(пароль або TOTP)" as UC_Reauth
+  }
+
+  package "Об'єкт" {
+    usecase "Створити об'єкт\n(у межах тарифу)" as UC_Facility
+    usecase "Керувати учасниками\nта гостьовим доступом" as UC_Members
+    usecase "Керувати зонами, датчиками,\nрозкладами, параметрами" as UC_Zones
+    usecase "Ввести вузол в експлуатацію\n(видати токен пристрою)" as UC_Commission
+  }
+
+  package "Пристрій" {
+    usecase "Надіслати пакет подій\n(з усуненням дублікатів)" as UC_Events
+    usecase "Надіслати службове\nповідомлення (heartbeat)" as UC_Heartbeat
+  }
+
+  package "Адміністрування" {
+    usecase "Переглянути користувачів" as UC_AdminUsers
+    usecase "Переглянути журнал аудиту" as UC_Audit
+  }
+}
+
+User --> UC_Register
+User --> UC_Login
+User --> UC_Totp
+User --> UC_Profile
+User --> UC_Export
+User --> UC_Delete
+User --> UC_Facility
+
+Guest --> UC_ViewEvents
+Guest --> UC_Arm
+Guest --> UC_Disarm
+Family --> UC_Ack
+Owner --> UC_Members
+Owner --> UC_Zones
+Owner --> UC_Commission
+Installer --> UC_Zones
+Installer --> UC_Commission
+
+Admin --> UC_AdminUsers
+Admin --> UC_Audit
+
+Node --> UC_Events
+Node --> UC_Heartbeat
+
+UC_Disarm ..> UC_Reauth : <<include>>
+UC_Ack ..> UC_Reauth : <<include>>
+UC_Delete ..> UC_Reauth : <<include>>
+
+note bottom of Guest
+  Усі дії гостя доступні лише
+  в межах access_from — access_until
+end note
+@enduml
