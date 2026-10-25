@@ -61,9 +61,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     tariff_plan_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tariff_plans.id", ondelete="RESTRICT")
     )
-    privacy_consent_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True)
-    )
+    privacy_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Заповнюється під час видалення даних (GDPR): запис знеособлюється,
     # а не видаляється, щоб не порушувати цілісність журналів.
     anonymized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

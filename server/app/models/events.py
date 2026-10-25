@@ -82,6 +82,8 @@ class Alarm(UUIDPrimaryKeyMixin, Base):
     __table_args__ = (
         CheckConstraint("confidence >= 0", name="confidence_non_negative"),
         Index("ix_alarms_facility_opened", "facility_id", "opened_at"),
+        # Відбір відкритих тривог об'єкта (стрічка тривог, сповіщення).
+        Index("ix_alarms_facility_status", "facility_id", "status"),
     )
 
     facility_id: Mapped[uuid.UUID] = mapped_column(

@@ -16,11 +16,14 @@ if config.config_file_name is not None:
 # Метадані моделей потрібні для автоматичного формування міграцій.
 target_metadata = Base.metadata
 
+# Тести передають адресу окремої тестової БД через config.attributes.
+database_url: str = config.attributes.get("database_url", settings.database_url)
+
 
 def run_migrations_offline() -> None:
     """Формує SQL без підключення до бази даних."""
     context.configure(
-        url=settings.database_url,
+        url=database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -32,7 +35,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Застосовує міграції до бази даних із підключенням."""
-    connectable = create_engine(settings.database_url, poolclass=pool.NullPool)
+    connectable = create_engine(database_url, poolclass=pool.NullPool)
     with connectable.connect() as connection:
         context.configure(
             connection=connection,

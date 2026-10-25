@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, String, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Identity, Index, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,6 +16,10 @@ class AuditLogEntry(Base):
     """Журнал доступу до даних і адміністративних дій (лише додавання)."""
 
     __tablename__ = "audit_log"
+    __table_args__ = (
+        # Пошук записів аудиту щодо конкретної сутності (об'єкт, вузол тощо).
+        Index("ix_audit_log_entity", "entity_type", "entity_id"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     user_id: Mapped[uuid.UUID | None] = mapped_column(

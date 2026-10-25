@@ -153,9 +153,7 @@ class Schedule(UUIDPrimaryKeyMixin, Base):
 
     __tablename__ = "schedules"
     __table_args__ = (
-        CheckConstraint(
-            "days_mask BETWEEN 1 AND 127", name="days_mask_range"
-        ),
+        CheckConstraint("days_mask BETWEEN 1 AND 127", name="days_mask_range"),
     )
 
     facility_id: Mapped[uuid.UUID] = mapped_column(

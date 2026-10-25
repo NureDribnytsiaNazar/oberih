@@ -30,7 +30,7 @@ class Node(UUIDPrimaryKeyMixin, Base):
     name: Mapped[str] = mapped_column(String(128))
     serial: Mapped[str] = mapped_column(String(64), unique=True)
     # Зберігається лише хеш токена пристрою; сам токен видається один раз.
-    device_token_hash: Mapped[str | None] = mapped_column(String(64))
+    device_token_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
     firmware_version: Mapped[str | None] = mapped_column(String(32))
     status: Mapped[NodeStatus] = mapped_column(
         enum_column(NodeStatus), default=NodeStatus.PROVISIONING
