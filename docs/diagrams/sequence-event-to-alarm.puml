@@ -34,7 +34,7 @@ Core --> Proc : Decision(level=alarm, C=0.5,\nmode_trigger=INTRUSION)
 Proc -> Store : record_decision(facility, zone, decision, event_id)
 Store -> Db : SELECT поточна тривога / INSERT alarms, alarm_events
 Proc -> Fsm : transition(facility, INTRUSION, source=system)
-Fsm -> Fsm : next_mode(armed_away, INTRUSION, entry_delay_s)\n= entry_delay
+Fsm -> Fsm : next_mode(armed_away, INTRUSION, entry_delay_s)\n→ entry_delay
 Fsm -> Db : INSERT arming_log; UPDATE facilities.mode
 Proc -> Notify : alarm_changed(alarm)
 Proc -> Db : COMMIT
