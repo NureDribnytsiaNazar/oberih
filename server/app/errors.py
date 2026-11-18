@@ -16,10 +16,14 @@ logger = logging.getLogger(__name__)
 class AppError(Exception):
     """Помилка предметної області з HTTP-статусом і кодом для клієнта."""
 
-    def __init__(self, status_code: int, code: str) -> None:
+    def __init__(
+        self, status_code: int, code: str, details: list[Any] | None = None
+    ) -> None:
         super().__init__(code)
         self.status_code = status_code
         self.code = code
+        # Уточнення для клієнта, наприклад поле, у якому знайдено помилку.
+        self.details = details
 
 
 class NotFoundError(AppError):
@@ -53,8 +57,8 @@ class ConflictError(AppError):
 class BadRequestError(AppError):
     """Дані запиту коректні за форматом, але неприйнятні за змістом."""
 
-    def __init__(self, code: str) -> None:
-        super().__init__(status.HTTP_400_BAD_REQUEST, code)
+    def __init__(self, code: str, details: list[Any] | None = None) -> None:
+        super().__init__(status.HTTP_400_BAD_REQUEST, code, details)
 
 
 def error_body(
@@ -78,7 +82,7 @@ async def _app_error_handler(request: Request, exc: Exception) -> JSONResponse:
         headers = {"WWW-Authenticate": "Bearer"}
     return JSONResponse(
         status_code=exc.status_code,
-        content=error_body(request, exc.code),
+        content=error_body(request, exc.code, exc.details),
         headers=headers,
     )
 

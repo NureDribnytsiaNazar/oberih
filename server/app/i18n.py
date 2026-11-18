@@ -190,6 +190,27 @@ MESSAGES: dict[str, dict[Locale, str]] = {
         Locale.UK: "Центр сертифікації не ініціалізовано (scripts/init_ca.py)",
         Locale.EN: "The certificate authority is not initialized (scripts/init_ca.py)",
     },
+    "import_invalid": {
+        Locale.UK: "Документ імпорту містить помилку (див. details)",
+        Locale.EN: "The import document contains an error (see details)",
+    },
+    "csv.id": {Locale.UK: "Номер", Locale.EN: "Number"},
+    "csv.time_utc": {Locale.UK: "Час (UTC)", Locale.EN: "Time (UTC)"},
+    "csv.time_local": {Locale.UK: "Місцевий час", Locale.EN: "Local time"},
+    "csv.event": {Locale.UK: "Подія", Locale.EN: "Event"},
+    "csv.zone": {Locale.UK: "Зона", Locale.EN: "Zone"},
+    "csv.sensor": {Locale.UK: "Датчик", Locale.EN: "Sensor"},
+    "csv.seq": {Locale.UK: "Порядковий номер", Locale.EN: "Sequence"},
+    "event.opened": {Locale.UK: "Відчинено", Locale.EN: "Opened"},
+    "event.closed": {Locale.UK: "Зачинено", Locale.EN: "Closed"},
+    "event.motion": {Locale.UK: "Рух", Locale.EN: "Motion"},
+    "event.tamper": {Locale.UK: "Втручання в корпус", Locale.EN: "Tamper"},
+    "event.tamper_restored": {
+        Locale.UK: "Корпус закрито",
+        Locale.EN: "Tamper restored",
+    },
+    "event.node_offline": {Locale.UK: "Вузол недоступний", Locale.EN: "Node offline"},
+    "event.node_online": {Locale.UK: "Вузол на зв'язку", Locale.EN: "Node online"},
     "far.check_sensor": {
         Locale.UK: "Частка хибних спрацювань висока: перевірте розташування "
         "або чутливість датчика",

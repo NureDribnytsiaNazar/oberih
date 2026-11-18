@@ -18,6 +18,7 @@ from app.api.v1 import (
     events,
     facilities,
     schedules,
+    transfer,
     users,
 )
 from app.config import settings
@@ -65,6 +66,7 @@ for module in (
     device,
     events,
     analytics,
+    transfer,
     admin,
     admin_data,
     admin_certificates,

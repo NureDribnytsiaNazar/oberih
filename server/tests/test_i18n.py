@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 from app.i18n import MESSAGES
-from app.models.enums import Locale
+from app.models.enums import EventType, Locale
 
 APP_DIR = Path(__file__).resolve().parent.parent / "app"
 # Коди в конструкторах помилок: NotFoundError("code"), AppError(503, "code") тощо.
@@ -41,3 +41,9 @@ def test_every_message_has_all_locales() -> None:
 
 def test_scanner_finds_codes() -> None:
     assert {"not_found", "tariff_limit", "backup_corrupted"} <= used_codes()
+
+
+def test_event_types_are_translated() -> None:
+    # Ключі "event.<тип>" будуються динамічно (експорт CSV), тому їх перевіряємо окремо.
+    missing = [t.value for t in EventType if f"event.{t.value}" not in MESSAGES]
+    assert missing == []
