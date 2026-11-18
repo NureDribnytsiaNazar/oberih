@@ -11,7 +11,12 @@ from tests.conftest import API, new_user
 
 
 def test_health(client: TestClient) -> None:
-    assert client.get(f"{API}/health").json() == {"status": "ok"}
+    response = client.get(f"{API}/health")
+    assert response.json() == {"status": "ok"}
+    # Явне кодування: клієнти без нього можуть зіпсувати кирилицю.
+    assert response.headers["content-type"] == "application/json; charset=utf-8"
+    error = client.get(f"{API}/nope")
+    assert error.headers["content-type"] == "application/json; charset=utf-8"
 
 
 def test_unknown_route_uses_error_format(client: TestClient) -> None:

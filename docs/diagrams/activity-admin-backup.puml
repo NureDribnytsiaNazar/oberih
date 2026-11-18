@@ -1,0 +1,49 @@
+@startuml activity-admin-backup
+' Діаграма діяльності: резервне копіювання й відновлення (app/services/backup.py).
+skinparam shadowing false
+skinparam defaultFontName Arial
+title Резервне копіювання та відновлення
+
+|Адміністратор|
+start
+:POST /api/v1/admin/backups {kind};
+|Сервер|
+:create_backup(): запис backups (pending);
+:_dump_table() для кожної таблиці\n(full: усі, крім refresh_tokens і backups;\nsettings: налаштування без токенів вузлів);
+:JSON з format_version -> gzip;
+if (Файл записано в BACKUP_DIR?) then (так)
+  :size_bytes, sha256, status = completed;\naudit_log: backup.create;
+else (ні)
+  :status = failed; 500 backup_failed;
+  stop
+endif
+|Адміністратор|
+:POST /admin/backups/{id}/restore\n{confirmation: пароль або TOTP};
+|Сервер|
+:reauth.confirm_action();
+if (Підтверджено?) then (ні)
+  :401 reauth_required / reauth_failed;
+  stop
+endif
+:_read_verified(): статус, sha256 файлу,\nformat_version;
+if (Файл цілий і формат підтримується?) then (ні)
+  :400 backup_corrupted /\nbackup_unsupported_format;
+  stop
+endif
+partition "Одна транзакція" {
+  if (kind = full?) then (так)
+    :_restore_full(): TRUNCATE ... CASCADE\n(тригери рядків журналів не спрацьовують);
+    :INSERT рядків у порядку залежностей;\n_reset_identity();
+  else (settings)
+    :_restore_settings(): INSERT ... ON CONFLICT\nDO UPDATE (токени вузлів не перезаписуються);
+  endif
+  :audit_log: backup.restore;
+}
+if (Помилка під час вставки?) then (так)
+  :ROLLBACK — дані як до спроби;\n400 backup_restore_failed;
+  stop
+else (ні)
+  :COMMIT; 200 {kind, rows};
+endif
+stop
+@enduml

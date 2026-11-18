@@ -1,0 +1,50 @@
+@startuml sequence-event-to-alarm
+' Діаграма взаємодії: від події вузла до тривоги та журналу.
+' Імена відповідають модулям і функціям у server/app.
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign center
+title Подія датчика -> тривога (об'єкт armed_away)
+
+participant "IoT-вузол\n(ESP32)" as Node
+participant "API\napi/v1/device.py" as Api
+participant "deps.get_device_node" as Deps
+participant "pipeline/processor.py\ningest_batch" as Proc
+participant "pipeline/core.py" as Core
+participant "alarm_store.py" as Store
+participant "arming.transition\n+ state_machine" as Fsm
+participant "notifier.py\nLogNotifier" as Notify
+database "PostgreSQL" as Db
+
+Node -> Api : POST /api/v1/device/events\nX-Device-Token, [opened ch1, seq 41]
+Api -> Deps : автентифікація вузла
+Deps -> Db : SELECT nodes WHERE device_token_hash = sha256(token)
+Deps -> Db : SELECT certificates WHERE node_id
+Deps --> Api : Node
+Api -> Proc : ingest_batch(db, node, batch)
+Proc -> Db : SELECT sensors JOIN zones (канал -> SensorRef)
+Proc -> Proc : nodes.mark_seen(node)
+Proc -> Db : _is_stored_duplicate(): SELECT events\n(seq або вікно Δ(дубл.))
+Db --> Proc : немає збігу
+Proc -> Db : _store_event(): INSERT events\nON CONFLICT DO NOTHING RETURNING id
+Proc -> Db : _recent_triggers(): спрацювання у вікні Δ(підтв.)
+Proc -> Core : evaluate(reading, mode, recent, settings)
+Core -> Core : is_monitored(), confidence_index(), classify()
+Core --> Proc : Decision(level=alarm, C=0.5,\nmode_trigger=INTRUSION)
+Proc -> Store : record_decision(facility, zone, decision, event_id)
+Store -> Db : SELECT поточна тривога / INSERT alarms, alarm_events
+Proc -> Fsm : transition(facility, INTRUSION, source=system)
+Fsm -> Fsm : next_mode(armed_away, INTRUSION, entry_delay_s)\n= entry_delay
+Fsm -> Db : INSERT arming_log; UPDATE facilities.mode
+Proc -> Notify : alarm_changed(alarm)
+Proc -> Db : COMMIT
+Proc --> Api : DeviceEventsResult
+Api --> Node : 200 {accepted: 1, duplicates: 0, results}
+
+== Через entry_delay_s без зняття з охорони ==
+note over Fsm, Db
+  Фоновий виконавець викликає timers.process_timers(now):
+  arming.apply_due_timer() -> transition(ENTRY_DELAY_EXPIRED) -> alarm
+  (див. sequence-timers.puml)
+end note
+@enduml

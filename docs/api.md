@@ -109,18 +109,21 @@
 | POST | `/facilities/{id}/disarm` | Зняття з повторним підтвердженням; з режиму `alarm` — лише хто може підтверджувати тривоги | те саме |
 | GET | `/facilities/{id}/arming-log` | Журнал: хто, коли, з якого режиму, звідки | власник, член родини, гість |
 
-Допустимі переходи (рисунок 2 Vision & Scope):
+Автомат режимів (рисунок 2 Vision & Scope, `app/services/state_machine.py`):
 
 ```
-disarmed --away--> exit_delay --(минула затримка виходу)--> armed_away
-disarmed --away (затримка 0)--> armed_away
-disarmed --home--> armed_home
-exit_delay | armed_away | armed_home | entry_delay | alarm --disarm--> disarmed
+disarmed    --arm away-->              exit_delay   (exit_delay_s = 0: armed_away)
+disarmed    --arm home-->              armed_home
+exit_delay  --минула затримка-->       armed_away   (фоновий виконавець)
+armed_*     --спрацювання-->           entry_delay  (entry_delay_s = 0: alarm)
+entry_delay --минула затримка-->       alarm        (фоновий виконавець)
+будь-який   --тампер / цілодобова-->   alarm
+exit_delay | armed_* | entry_delay | alarm --disarm--> disarmed
 ```
 
-Інші команди дають `409 invalid_transition`. Переходи `entry_delay` і `alarm`
-за подіями датчиків з'являться в ЛБ3. Поки діє заглушка: подія `tamper` одразу
-переводить об'єкт у `alarm`.
+Інші переходи дають `409 invalid_transition`. Зняття під час затримки входу
+скасовує тривогу (`cancelled`); закриття останньої тривоги (`resolve`,
+`mark_false`) знімає об'єкт з охорони.
 
 ### Пристрій (`device`)
 
@@ -129,9 +132,22 @@ exit_delay | armed_away | armed_home | entry_delay | alarm --disarm--> disarmed
 | POST | `/device/events` | Пакет до 200 подій `{channel, event_type, seq, occurred_at, payload}` |
 | POST | `/device/heartbeat` | Службове повідомлення; відповідь містить `server_time`, `poll_interval_s`, `facility_mode` |
 
-Повторне надсилання тих самих подій (той самий вузол, датчик, тип і `seq`) не
-створює нових записів: відповідь `{"accepted": 0, "duplicates": N, "last_seq": …}`.
-Пакет із невідомим каналом відхиляється цілком (`400 unknown_channel`).
+Конвеєр обробки (`app/services/pipeline/`): подія — дублікат, якщо в архіві є
+та сама подія датчика з тим самим `seq` або з різницею в часі менше за
+Δ(дубл.) (`duplicate_window_s`, 5 с). Відповідь містить статус кожної події:
+
+```json
+{"accepted": 1, "duplicates": 1, "last_seq": 42,
+ "results": [{"seq": 41, "channel": 1, "status": "duplicate"},
+             {"seq": 42, "channel": 2, "status": "accepted"}]}
+```
+
+Далі: відсів за режимом і зоною, індекс достовірності
+C(t) = Σ w(i) по різних датчиках у вікні Δ(підтв.) (60 с), рівень `warning` /
+`alarm` (C ≥ 0,4) / `confirmed` (C ≥ 0,9; тампер і цілодобова зона — завжди),
+створення або підвищення рівня поточної тривоги, перехід автомата. Пакет із
+невідомим каналом відхиляється цілком (`400 unknown_channel`). Вузол із
+відкликаним або простроченим сертифікатом отримує `401 certificate_invalid`.
 
 Приклад:
 
@@ -141,7 +157,8 @@ X-Device-Token: <token>
 
 {"events": [
   {"channel": 1, "event_type": "opened", "seq": 41, "occurred_at": "2026-10-25T22:04:30Z"},
-  {"channel": 3, "event_type": "motion", "seq": 42, "occurred_at": "2026-10-25T22:04:33Z"}
+  {"channel": 3, "event_type": "motion", "seq": 42, "occurred_at": "2026-10-25T22:04:33Z",
+   "payload": {"temperature_c": 21.5}}
 ]}
 ```
 
@@ -149,18 +166,62 @@ X-Device-Token: <token>
 
 | Метод | Шлях | Призначення | Право |
 |---|---|---|---|
-| GET | `/facilities/{id}/events?from=&to=&event_type=&zone_id=` | Архів подій | власник, член родини, гість |
-| GET | `/facilities/{id}/alarms?status=&level=` | Тривоги | власник, член родини, гість |
+| GET | `/facilities/{id}/events?from=&to=&event_type=&zone_id=&tz=` | Архів подій (UTC, `time_local`, `time_local_text`, `measurements`) | власник, член родини, гість |
+| GET | `/facilities/{id}/alarms?status=&level=&tz=` | Тривоги (`opened_at_local`) | власник, член родини, гість |
 | POST | `/alarms/{alarm_id}/acknowledge` | `acknowledge`, `mark_false`, `resolve` з повторним підтвердженням | власник, член родини |
+| POST | `/alarms/{alarm_id}/summary` | Стисла хронологія інциденту (професійний тариф) | власник, член родини, гість |
+| GET | `/alarms/{alarm_id}/summaries` | Сформовані хронології | те саме |
 
-### Адміністрування (`admin`)
+### Аналітика (`analytics`)
+
+| Метод | Шлях | Призначення | Право |
+|---|---|---|---|
+| GET | `/facilities/{id}/statistics/false-alarms?tz=` | FAR за датчиками, зонами й годиною доби; `recommendation: check_sensor` | перегляд подій; тариф зі статистикою |
+| GET, POST | `/facilities/{id}/scenarios` | Тестові сценарії `{steps: [{offset_ms, sensor_id, state}], expected: [{level, zone_id}]}` | власник, монтажник |
+| GET, PATCH, DELETE | `/facilities/{id}/scenarios/{scenario_id}` | Керування сценарієм | власник, монтажник |
+| POST | `/facilities/{id}/scenarios/{scenario_id}/run` | Відтворення в ізольованому режимі `{mode}` -> `{passed, actual, mismatches}` | власник, монтажник |
+| GET | `/facilities/{id}/scenarios/{scenario_id}/runs` | Історія запусків | власник, монтажник |
+
+### Перенесення даних (`transfer`)
+
+| Метод | Шлях | Призначення | Право |
+|---|---|---|---|
+| GET | `/facilities/{id}/export` | Документ налаштувань (`format_version`, природні ключі) | власник, монтажник |
+| POST | `/facilities/{id}/import?dry_run=true` | Імпорт; `dry_run` лише показує зміни; помилки з `details.loc` | власник, монтажник |
+| GET | `/facilities/{id}/events/export?format=csv&locale=&tz=&from=&to=` | CSV подій (UTF-8 з BOM, роздільник за локаллю) | перегляд подій |
+
+### Адміністрування (`admin`, `certificates`)
+
+Доступ лише для користувача з `is_platform_admin = true`; кожна дія
+записується в журнал аудиту. Позначка «🔒» — потрібне повторне
+підтвердження `{"confirmation": {"method": "password"|"totp", "value": "..."}}`.
 
 | Метод | Шлях | Призначення |
 |---|---|---|
-| GET | `/admin/users` | Усі користувачі (перегляд фіксується в журналі аудиту) |
+| GET | `/admin/users`, `/admin/users/{id}` | Користувачі |
+| POST | `/admin/users/{id}/block`, `/unblock` | Блокування (вхід і сесії) |
+| PUT | `/admin/users/{id}/platform-admin` | Права адміністратора (крім останнього) |
+| POST | `/admin/users/{id}/sessions/revoke` | Завершення всіх сесій |
+| POST | `/admin/users/{id}/totp/reset` | Скидання двофакторної автентифікації |
+| PUT | `/admin/users/{id}/tariff` | Зміна тарифу `{code}` |
 | GET | `/admin/audit-log?user_id=&action=&entity_type=` | Журнал аудиту |
+| GET | `/admin/stats` | Кількість записів і розмір архіву |
+| POST 🔒 | `/admin/data/purge` | Видалення даних, старших за строк зберігання тарифу |
+| POST, GET | `/admin/backups` | Створення `{kind: full\|settings}` і реєстр копій |
+| GET | `/admin/backups/{id}/download` | Файл копії (gzip) |
+| POST 🔒 | `/admin/backups/{id}/restore` | Відновлення в одній транзакції |
+| DELETE 🔒 | `/admin/backups/{id}` | Видалення копії |
+| POST, GET | `/admin/certificates?status=&node_id=&expires_before=` | Випуск сертифіката вузла (ключ — один раз) і перелік |
+| GET | `/admin/certificates/{id}`, `/crl`, `/expiring?days=` | Сертифікат, відкликані номери, строк дії спливає |
+| POST 🔒 | `/admin/certificates/{id}/revoke` | Відкликання |
+| POST | `/admin/certificates/{id}/renew` | Поновлення (старий відкликається) |
 
-Доступ лише для користувача з `is_platform_admin = true`.
+### Довідники (`service`)
+
+| Метод | Шлях | Призначення |
+|---|---|---|
+| GET | `/locales` | Мови: код, назва, напрям тексту `ltr`/`rtl`, чи підтримується |
+| GET | `/privacy` | Відомості про оброблювані дані, права та строки зберігання |
 
 ## Архітектура серверної частини
 
@@ -172,4 +233,10 @@ app/schemas/*.py    схеми Pydantic запитів і відповідей
 app/deps.py         залежності: сесія БД, поточний користувач, вузол, пагінація
 app/errors.py       єдиний формат помилок; app/i18n.py — переклади
 app/security.py     Argon2, JWT, токени пристроїв, TOTP
+app/services/state_machine.py   автомат режимів (чистий модуль)
+app/services/pipeline/core.py   ядро конвеєра: дублікати, відсів, C(t), рівні
+app/services/pipeline/processor.py   обробка пакета вузла з БД
+app/services/pipeline/simulator.py   відтворення сценаріїв у пам'яті
+app/services/timers.py, app/worker.py   таймери та фоновий виконавець
+app/l10n.py, app/units.py   місцевий час, формати, сортування, одиниці
 ```

@@ -24,6 +24,7 @@ from app.api.v1 import (
 )
 from app.config import settings
 from app.errors import register_error_handlers
+from app.responses import UTF8JSONResponse
 from app.worker import run_worker
 
 API_PREFIX = "/api/v1"
@@ -53,6 +54,7 @@ app = FastAPI(
     ),
     version="0.3.0",
     lifespan=lifespan,
+    default_response_class=UTF8JSONResponse,
 )
 register_error_handlers(app)
 

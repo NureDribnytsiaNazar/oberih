@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from app.responses import UTF8JSONResponse as JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.i18n import resolve_locale, translate

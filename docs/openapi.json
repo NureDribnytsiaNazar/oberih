@@ -3,7 +3,7 @@
   "info": {
     "title": "Оберіг — програмна система для безпеки житла",
     "description": "REST API серверної частини «Оберіг». Час у запитах і відповідях — UTC у форматі ISO 8601. Мова повідомлень про помилки обирається за заголовком Accept-Language (uk, en).",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "paths": {
     "/api/v1/auth/register": {
@@ -28,7 +28,7 @@
           "201": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/UserOut"
                 }
@@ -88,7 +88,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenPair"
                 }
@@ -148,7 +148,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenPair"
                 }
@@ -215,7 +215,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/TotpSetup"
                 }
@@ -282,7 +282,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/UserOut"
                 }
@@ -355,7 +355,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/UserOut"
                 }
@@ -392,7 +392,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/UserExport"
                 }
@@ -413,7 +413,7 @@
           "facilities"
         ],
         "summary": "List Facilities",
-        "description": "Об'єкти, до яких користувач має доступ.",
+        "description": "Об'єкти, до яких користувач має доступ (за абеткою його мови).",
         "operationId": "list_facilities_api_v1_facilities_get",
         "security": [
           {
@@ -449,7 +449,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_FacilityOut_"
                 }
@@ -494,7 +494,7 @@
           "201": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/FacilityOut"
                 }
@@ -543,7 +543,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/FacilityOut"
                 }
@@ -600,7 +600,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/FacilityOut"
                 }
@@ -689,7 +689,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/FacilitySettingsOut"
                 }
@@ -737,7 +737,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FacilitySettingsUpdate"
+                "$ref": "#/components/schemas/FacilitySettingsUpdate-Input"
               }
             }
           }
@@ -746,7 +746,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/FacilitySettingsOut"
                 }
@@ -818,7 +818,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_MemberOut_"
                 }
@@ -875,7 +875,7 @@
           "201": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/MemberOut"
                 }
@@ -944,7 +944,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/MemberOut"
                 }
@@ -1020,7 +1020,7 @@
           "equipment"
         ],
         "summary": "List Zones",
-        "description": "Зони об'єкта.",
+        "description": "Зони об'єкта за абеткою мови користувача.",
         "operationId": "list_zones_api_v1_facilities__facility_id__zones_get",
         "security": [
           {
@@ -1043,7 +1043,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1104,7 +1104,7 @@
           "201": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/ZoneOut"
                 }
@@ -1173,7 +1173,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/ZoneOut"
                 }
@@ -1272,7 +1272,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1333,7 +1333,7 @@
           "201": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/NodeOut"
                 }
@@ -1392,7 +1392,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/NodeOut"
                 }
@@ -1459,7 +1459,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/NodeOut"
                 }
@@ -1568,7 +1568,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/NodeCommissionOut"
                 }
@@ -1627,7 +1627,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1698,7 +1698,7 @@
           "201": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/SensorOut"
                 }
@@ -1777,7 +1777,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/SensorOut"
                 }
@@ -1886,7 +1886,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "type": "array",
                   "items": {
@@ -1947,7 +1947,7 @@
           "201": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/ScheduleOut"
                 }
@@ -2016,7 +2016,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/ScheduleOut"
                 }
@@ -2125,7 +2125,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/FacilityStateOut"
                 }
@@ -2184,7 +2184,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/FacilityStateOut"
                 }
@@ -2256,7 +2256,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_ArmingLogOut_"
                 }
@@ -2298,7 +2298,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/DeviceEventsResult"
                 }
@@ -2345,7 +2345,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/HeartbeatOut"
                 }
@@ -2376,7 +2376,7 @@
           "events"
         ],
         "summary": "List Events",
-        "description": "Архів подій із фільтрами за часом [from, to), типом і зоною.",
+        "description": "Архів подій із фільтрами за часом [from, to), типом і зоною.\n\nЧас подається в UTC і в місцевому часі (tz або часовий пояс профілю).",
         "operationId": "list_events_api_v1_facilities__facility_id__events_get",
         "security": [
           {
@@ -2462,6 +2462,25 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Часовий пояс IANA",
+              "title": "Tz"
+            },
+            "description": "Часовий пояс IANA"
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -2489,7 +2508,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_EventOut_"
                 }
@@ -2566,6 +2585,25 @@
             }
           },
           {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Часовий пояс IANA",
+              "title": "Tz"
+            },
+            "description": "Часовий пояс IANA"
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -2593,7 +2631,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_AlarmOut_"
                 }
@@ -2652,11 +2690,857 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/AlarmOut"
                 }
               }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alarms/{alarm_id}/summary": {
+      "post": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Summarize Alarm",
+        "description": "Стисла хронологія інциденту (професійний тариф); модель нічим не керує.",
+        "operationId": "summarize_alarm_api_v1_alarms__alarm_id__summary_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "alarm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Alarm Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentSummaryOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alarms/{alarm_id}/summaries": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List Summaries",
+        "description": "Раніше сформовані хронології тривоги.",
+        "operationId": "list_summaries_api_v1_alarms__alarm_id__summaries_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "alarm_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Alarm Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IncidentSummaryOut"
+                  },
+                  "title": "Response List Summaries Api V1 Alarms  Alarm Id  Summaries Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/statistics/false-alarms": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "False Alarms",
+        "description": "FAR за датчиками, зонами й годиною доби (у поясі об'єкта або tz).",
+        "operationId": "false_alarms_api_v1_facilities__facility_id__statistics_false_alarms_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/FalseAlarmStatsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/scenarios": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "List Scenarios",
+        "description": "Тестові сценарії об'єкта (власник, монтажник).",
+        "operationId": "list_scenarios_api_v1_facilities__facility_id__scenarios_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioOut"
+                  },
+                  "title": "Response List Scenarios Api V1 Facilities  Facility Id  Scenarios Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Create Scenario",
+        "description": "Створення сценарію: кроки {offset_ms, sensor_id, state} і очікувані тривоги.",
+        "operationId": "create_scenario_api_v1_facilities__facility_id__scenarios_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/scenarios/{scenario_id}": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Get Scenario",
+        "description": "Сценарій об'єкта.",
+        "operationId": "get_scenario_api_v1_facilities__facility_id__scenarios__scenario_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Update Scenario",
+        "description": "Зміна сценарію.",
+        "operationId": "update_scenario_api_v1_facilities__facility_id__scenarios__scenario_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Delete Scenario",
+        "description": "Видалення сценарію.",
+        "operationId": "delete_scenario_api_v1_facilities__facility_id__scenarios__scenario_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/scenarios/{scenario_id}/run": {
+      "post": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Run Scenario",
+        "description": "Відтворення в ізольованому режимі з поточними налаштуваннями об'єкта.",
+        "operationId": "run_scenario_api_v1_facilities__facility_id__scenarios__scenario_id__run_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioRunOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/scenarios/{scenario_id}/runs": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "List Runs",
+        "description": "Історія запусків сценарію.",
+        "operationId": "list_runs_api_v1_facilities__facility_id__scenarios__scenario_id__runs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ScenarioRunOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/export": {
+      "get": {
+        "tags": [
+          "transfer"
+        ],
+        "summary": "Export Settings",
+        "description": "Документ налаштувань: параметри, зони, вузли, датчики, розклади, сценарії.",
+        "operationId": "export_settings_api_v1_facilities__facility_id__export_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsDocument-Output"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/import": {
+      "post": {
+        "tags": [
+          "transfer"
+        ],
+        "summary": "Import Settings",
+        "description": "Імпорт документа; dry_run=true показує зміни, нічого не записуючи.",
+        "operationId": "import_settings_api_v1_facilities__facility_id__import_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Dry Run"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsDocument-Input"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/events/export": {
+      "get": {
+        "tags": [
+          "transfer"
+        ],
+        "summary": "Export Events",
+        "description": "Архів подій у CSV (UTF-8); роздільник і формат дат — за локаллю.",
+        "operationId": "export_events_api_v1_facilities__facility_id__events_export_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "const": "csv",
+              "type": "string",
+              "default": "csv",
+              "title": "Format"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Locale"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Locale"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tz"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {}
             }
           },
           "422": {
@@ -2714,7 +3598,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_AdminUserOut_"
                 }
@@ -2827,7 +3711,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/Page_AuditLogOut_"
                 }
@@ -2859,13 +3743,1195 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "items": {
                     "$ref": "#/components/schemas/TariffOut"
                   },
                   "type": "array",
                   "title": "Response List Tariffs Api V1 Tariffs Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Get User",
+        "description": "Обліковий запис користувача.",
+        "operationId": "get_user_api_v1_admin_users__user_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/block": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Block User",
+        "description": "Блокування: вхід заборонено, сесії завершуються.",
+        "operationId": "block_user_api_v1_admin_users__user_id__block_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/unblock": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Unblock User",
+        "description": "Розблокування.",
+        "operationId": "unblock_user_api_v1_admin_users__user_id__unblock_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/platform-admin": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Set Platform Admin",
+        "description": "Надання або зняття прав адміністратора (крім останнього).",
+        "operationId": "set_platform_admin_api_v1_admin_users__user_id__platform_admin_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformAdminUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/sessions/revoke": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Revoke Sessions",
+        "description": "Примусове завершення всіх сесій користувача.",
+        "operationId": "revoke_sessions_api_v1_admin_users__user_id__sessions_revoke_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsRevoked"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/totp/reset": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Reset Totp",
+        "description": "Скидання двофакторної автентифікації.",
+        "operationId": "reset_totp_api_v1_admin_users__user_id__totp_reset_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{user_id}/tariff": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Set Tariff",
+        "description": "Зміна тарифного плану.",
+        "operationId": "set_tariff_api_v1_admin_users__user_id__tariff_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TariffUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/stats": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Stats",
+        "description": "Кількість користувачів, об'єктів, вузлів, подій і розмір архіву.",
+        "operationId": "stats_api_v1_admin_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStats"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/data/purge": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Purge",
+        "description": "Видалення подій і тривог, старших за строк зберігання тарифу.",
+        "operationId": "purge_api_v1_admin_data_purge_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmedAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurgeResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/backups": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Create Backup",
+        "description": "Створення резервної копії (JSON, gzip) у каталозі BACKUP_DIR.",
+        "operationId": "create_backup_api_v1_admin_backups_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Backups",
+        "description": "Реєстр резервних копій.",
+        "operationId": "list_backups_api_v1_admin_backups_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_BackupOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/{backup_id}/download": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Download Backup",
+        "description": "Завантаження файлу копії.",
+        "operationId": "download_backup_api_v1_admin_backups__backup_id__download_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "backup_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Backup Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/{backup_id}/restore": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Restore Backup",
+        "description": "Відновлення з копії в одній транзакції (потрібне підтвердження).",
+        "operationId": "restore_backup_api_v1_admin_backups__backup_id__restore_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "backup_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Backup Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmedAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/backups/{backup_id}": {
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Delete Backup",
+        "description": "Видалення копії (потрібне підтвердження).",
+        "operationId": "delete_backup_api_v1_admin_backups__backup_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "backup_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Backup Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmedAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/certificates": {
+      "post": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Issue Certificate",
+        "description": "Випуск сертифіката вузла; приватний ключ повертається один раз.",
+        "operationId": "issue_certificate_api_v1_admin_certificates_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CertificateIssue"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateIssued"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "List Certificates",
+        "description": "Сертифікати з фільтрами за статусом, вузлом і строком дії.",
+        "operationId": "list_certificates_api_v1_admin_certificates_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CertificateStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "expires_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expires Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_CertificateOut_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/certificates/crl": {
+      "get": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Revocation List",
+        "description": "Перелік відкликаних серійних номерів.",
+        "operationId": "revocation_list_api_v1_admin_certificates_crl_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrlOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/admin/certificates/expiring": {
+      "get": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Expiring Certificates",
+        "description": "Активні сертифікати, строк дії яких спливає протягом days днів.",
+        "operationId": "expiring_certificates_api_v1_admin_certificates_expiring_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CertificateOut"
+                  },
+                  "title": "Response Expiring Certificates Api V1 Admin Certificates Expiring Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/certificates/{certificate_id}": {
+      "get": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Get Certificate",
+        "description": "Сертифікат за ідентифікатором.",
+        "operationId": "get_certificate_api_v1_admin_certificates__certificate_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "certificate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Certificate Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/certificates/{certificate_id}/revoke": {
+      "post": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Revoke Certificate",
+        "description": "Відкликання (потрібне підтвердження); вузол перестає проходити перевірку.",
+        "operationId": "revoke_certificate_api_v1_admin_certificates__certificate_id__revoke_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "certificate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Certificate Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmedAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/certificates/{certificate_id}/renew": {
+      "post": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Renew Certificate",
+        "description": "Поновлення: новий сертифікат замість старого, старий відкликається.",
+        "operationId": "renew_certificate_api_v1_admin_certificates__certificate_id__renew_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "certificate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Certificate Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CertificateRenew"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateIssued"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/locales": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Locales",
+        "description": "Мови: код, назва, напрям тексту (ltr/rtl), чи підтримується інтерфейсом.",
+        "operationId": "locales_api_v1_locales_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Locales Api V1 Locales Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/privacy": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Privacy",
+        "description": "Які персональні дані обробляються, навіщо, як довго, які права є.",
+        "operationId": "privacy_api_v1_privacy_get",
+        "parameters": [
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Privacy Api V1 Privacy Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -2885,7 +4951,7 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "application/json": {
+              "application/json; charset=utf-8": {
                 "schema": {
                   "additionalProperties": {
                     "type": "string"
@@ -3009,6 +5075,18 @@
           "tariff_plan": {
             "$ref": "#/components/schemas/AdminTariffRef"
           },
+          "blocked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked At"
+          },
           "anonymized_at": {
             "anyOf": [
               {
@@ -3036,6 +5114,7 @@
           "is_platform_admin",
           "totp_enabled",
           "tariff_plan",
+          "blocked_at",
           "anonymized_at",
           "created_at"
         ],
@@ -3113,6 +5192,29 @@
               }
             ],
             "title": "Closed At"
+          },
+          "opened_at_local": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened At Local"
+          },
+          "opened_at_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened At Text"
           }
         },
         "type": "object",
@@ -3135,7 +5237,8 @@
         "enum": [
           "open",
           "acknowledged",
-          "resolved"
+          "resolved",
+          "cancelled"
         ],
         "title": "AlarmStatus",
         "description": "Стан обробки тривоги."
@@ -3332,6 +5435,256 @@
         "title": "AuthMethod",
         "description": "Спосіб повторного підтвердження чутливої дії."
       },
+      "BackupCreate": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BackupKind",
+            "default": "full"
+          }
+        },
+        "type": "object",
+        "title": "BackupCreate",
+        "description": "Створення копії: full — усі дані, settings — лише налаштування."
+      },
+      "BackupKind": {
+        "type": "string",
+        "enum": [
+          "full",
+          "settings"
+        ],
+        "title": "BackupKind",
+        "description": "Вміст резервної копії."
+      },
+      "BackupOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/BackupKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BackupStatus"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "file_name",
+          "size_bytes",
+          "sha256",
+          "created_by",
+          "created_at"
+        ],
+        "title": "BackupOut",
+        "description": "Запис про резервну копію."
+      },
+      "BackupStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "completed",
+          "failed"
+        ],
+        "title": "BackupStatus",
+        "description": "Стан створення резервної копії."
+      },
+      "CertificateIssue": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Node Id"
+          },
+          "days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "default": 365
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "title": "CertificateIssue",
+        "description": "Випуск клієнтського сертифіката для вузла."
+      },
+      "CertificateIssued": {
+        "properties": {
+          "certificate": {
+            "$ref": "#/components/schemas/CertificateOut"
+          },
+          "private_key_pem": {
+            "type": "string",
+            "title": "Private Key Pem"
+          }
+        },
+        "type": "object",
+        "required": [
+          "certificate",
+          "private_key_pem"
+        ],
+        "title": "CertificateIssued",
+        "description": "Новий сертифікат і приватний ключ. Ключ показується лише один раз."
+      },
+      "CertificateOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "serial_number": {
+            "type": "string",
+            "title": "Serial Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CertificateStatus"
+          },
+          "not_before": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Not Before"
+          },
+          "not_after": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Not After"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "pem": {
+            "type": "string",
+            "title": "Pem"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "node_id",
+          "subject",
+          "serial_number",
+          "status",
+          "not_before",
+          "not_after",
+          "revoked_at",
+          "pem"
+        ],
+        "title": "CertificateOut",
+        "description": "Сертифікат вузла (без приватного ключа)."
+      },
+      "CertificateRenew": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "maximum": 3650.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "default": 365
+          }
+        },
+        "type": "object",
+        "title": "CertificateRenew",
+        "description": "Поновлення: новий сертифікат замість старого."
+      },
+      "CertificateStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "revoked",
+          "expired"
+        ],
+        "title": "CertificateStatus",
+        "description": "Стан сертифіката."
+      },
       "Confirmation": {
         "properties": {
           "method": {
@@ -3352,6 +5705,46 @@
         ],
         "title": "Confirmation",
         "description": "Повторне підтвердження чутливої дії паролем або кодом TOTP."
+      },
+      "ConfirmedAction": {
+        "properties": {
+          "confirmation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Confirmation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ConfirmedAction",
+        "description": "Деструктивна дія з повторним підтвердженням паролем або TOTP."
+      },
+      "CrlOut": {
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "revoked_serials": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Revoked Serials"
+          }
+        },
+        "type": "object",
+        "required": [
+          "generated_at",
+          "revoked_serials"
+        ],
+        "title": "CrlOut",
+        "description": "Перелік відкликаних серійних номерів."
       },
       "DeleteAccountRequest": {
         "properties": {
@@ -3434,6 +5827,34 @@
         "title": "DeviceEventIn",
         "description": "Подія з буфера вузла."
       },
+      "DeviceEventResult": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "channel": {
+            "type": "integer",
+            "title": "Channel"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "duplicate"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "channel",
+          "status"
+        ],
+        "title": "DeviceEventResult",
+        "description": "Результат обробки однієї події пакета."
+      },
       "DeviceEventsResult": {
         "properties": {
           "accepted": {
@@ -3449,6 +5870,13 @@
           "last_seq": {
             "type": "integer",
             "title": "Last Seq"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/DeviceEventResult"
+            },
+            "type": "array",
+            "title": "Results"
           }
         },
         "type": "object",
@@ -3539,6 +5967,37 @@
               }
             ],
             "title": "Payload"
+          },
+          "time_local": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Local"
+          },
+          "time_local_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Local Text"
+          },
+          "measurements": {
+            "items": {
+              "$ref": "#/components/schemas/Measurement"
+            },
+            "type": "array",
+            "title": "Measurements",
+            "default": []
           }
         },
         "type": "object",
@@ -3553,7 +6012,7 @@
           "payload"
         ],
         "title": "EventOut",
-        "description": "Подія з архіву."
+        "description": "Подія з архіву: час в UTC і місцевий час користувача."
       },
       "EventType": {
         "type": "string",
@@ -3568,6 +6027,55 @@
         ],
         "title": "EventType",
         "description": "Тип події, що надходить від вузла або формується сервером."
+      },
+      "ExpectedAlarm": {
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/AlarmLevel"
+          },
+          "zone_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level"
+        ],
+        "title": "ExpectedAlarm",
+        "description": "Очікувана тривога: рівень і, за потреби, зона."
+      },
+      "ExpectedDoc": {
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/AlarmLevel"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level"
+        ],
+        "title": "ExpectedDoc",
+        "description": "Очікувана тривога сценарію; zone — назва зони."
       },
       "FacilityCreate": {
         "properties": {
@@ -3765,7 +6273,7 @@
         "title": "FacilitySettingsOut",
         "description": "Параметри бізнес-логіки об'єкта (розділ 2.2.2 Vision & Scope)."
       },
-      "FacilitySettingsUpdate": {
+      "FacilitySettingsUpdate-Input": {
         "properties": {
           "exit_delay_s": {
             "anyOf": [
@@ -3972,6 +6480,183 @@
         "title": "FacilitySettingsUpdate",
         "description": "Зміна параметрів; передаються лише поля, які треба змінити."
       },
+      "FacilitySettingsUpdate-Output": {
+        "properties": {
+          "exit_delay_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 600.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Delay S"
+          },
+          "entry_delay_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 600.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Delay S"
+          },
+          "duplicate_window_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3600.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Window S"
+          },
+          "confirm_window_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3600.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirm Window S"
+          },
+          "poll_interval_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 3600.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Interval S"
+          },
+          "missed_polls_limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missed Polls Limit"
+          },
+          "weight_reed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Reed"
+          },
+          "weight_pir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Pir"
+          },
+          "weight_tamper": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Tamper"
+          },
+          "alarm_threshold": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alarm Threshold"
+          },
+          "confirmed_threshold": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed Threshold"
+          },
+          "far_window_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Far Window Days"
+          },
+          "far_min_alarms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Far Min Alarms"
+          },
+          "far_threshold": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Far Threshold"
+          }
+        },
+        "type": "object",
+        "title": "FacilitySettingsUpdate",
+        "description": "Зміна параметрів; передаються лише поля, які треба змінити."
+      },
       "FacilityStateOut": {
         "properties": {
           "facility_id": {
@@ -4041,6 +6726,156 @@
         "title": "FacilityUpdate",
         "description": "Зміна даних об'єкта."
       },
+      "FalseAlarmStatsOut": {
+        "properties": {
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone"
+          },
+          "sensors": {
+            "items": {
+              "$ref": "#/components/schemas/FarSensorOut"
+            },
+            "type": "array",
+            "title": "Sensors"
+          },
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/FarGroupOut"
+            },
+            "type": "array",
+            "title": "Zones"
+          },
+          "hours": {
+            "items": {
+              "$ref": "#/components/schemas/FarGroupOut"
+            },
+            "type": "array",
+            "title": "Hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "since",
+          "window_days",
+          "timezone",
+          "sensors",
+          "zones",
+          "hours"
+        ],
+        "title": "FalseAlarmStatsOut",
+        "description": "Статистика хибних спрацювань об'єкта за ковзне вікно."
+      },
+      "FarGroupOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "alarms": {
+            "type": "integer",
+            "title": "Alarms"
+          },
+          "false_alarms": {
+            "type": "integer",
+            "title": "False Alarms"
+          },
+          "far": {
+            "type": "string",
+            "title": "Far"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "alarms",
+          "false_alarms",
+          "far"
+        ],
+        "title": "FarGroupOut",
+        "description": "Агрегат за зоною або за годиною доби."
+      },
+      "FarSensorOut": {
+        "properties": {
+          "sensor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sensor Id"
+          },
+          "sensor_name": {
+            "type": "string",
+            "title": "Sensor Name"
+          },
+          "alarms": {
+            "type": "integer",
+            "title": "Alarms"
+          },
+          "false_alarms": {
+            "type": "integer",
+            "title": "False Alarms"
+          },
+          "far": {
+            "type": "string",
+            "title": "Far"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation",
+            "description": "check_sensor або null"
+          },
+          "recommendation_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sensor_id",
+          "sensor_name",
+          "alarms",
+          "false_alarms",
+          "far",
+          "recommendation",
+          "recommendation_text"
+        ],
+        "title": "FarSensorOut",
+        "description": "FAR датчика та рекомендація."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -4097,6 +6932,91 @@
         "title": "HeartbeatOut",
         "description": "Відповідь вузлу: час сервера, інтервал опитування, режим об'єкта."
       },
+      "ImportReport": {
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "created": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Created"
+          },
+          "updated": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Updated"
+          },
+          "unchanged": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Unchanged"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dry_run",
+          "created",
+          "updated",
+          "unchanged"
+        ],
+        "title": "ImportReport",
+        "description": "Що створено, змінено й залишено без змін (за розділами)."
+      },
+      "IncidentSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "alarm_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Alarm Id"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "facts": {
+            "type": "string",
+            "title": "Facts"
+          },
+          "assumptions": {
+            "type": "string",
+            "title": "Assumptions"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "alarm_id",
+          "language",
+          "facts",
+          "assumptions",
+          "model_name",
+          "created_at"
+        ],
+        "title": "IncidentSummaryOut",
+        "description": "Стисла хронологія інциденту: факти окремо від припущень."
+      },
       "Locale": {
         "type": "string",
         "enum": [
@@ -4139,6 +7059,30 @@
         ],
         "title": "LoginRequest",
         "description": "Вхід за електронною поштою й паролем (і кодом TOTP, якщо 2FA увімкнено)."
+      },
+      "Measurement": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "unit"
+        ],
+        "title": "Measurement",
+        "description": "Фізична величина з корисного навантаження події в одиницях користувача."
       },
       "MeasurementSystem": {
         "type": "string",
@@ -4362,6 +7306,37 @@
         ],
         "title": "NodeCreate",
         "description": "Реєстрація IoT-вузла за серійним номером."
+      },
+      "NodeDoc": {
+        "properties": {
+          "serial": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Serial"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "sensors": {
+            "items": {
+              "$ref": "#/components/schemas/SensorDoc"
+            },
+            "type": "array",
+            "title": "Sensors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "serial",
+          "name"
+        ],
+        "title": "NodeDoc",
+        "description": "Вузол (без токена пристрою) і його датчики."
       },
       "NodeOut": {
         "properties": {
@@ -4598,6 +7573,68 @@
         ],
         "title": "Page[AuditLogOut]"
       },
+      "Page_BackupOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BackupOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[BackupOut]"
+      },
+      "Page_CertificateOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CertificateOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[CertificateOut]"
+      },
       "Page_EventOut_": {
         "properties": {
           "items": {
@@ -4691,6 +7728,70 @@
         ],
         "title": "Page[MemberOut]"
       },
+      "Page_ScenarioRunOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioRunOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[ScenarioRunOut]"
+      },
+      "PlatformAdminUpdate": {
+        "properties": {
+          "is_platform_admin": {
+            "type": "boolean",
+            "title": "Is Platform Admin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_platform_admin"
+        ],
+        "title": "PlatformAdminUpdate",
+        "description": "Надання або зняття прав адміністратора платформи."
+      },
+      "PurgeResult": {
+        "properties": {
+          "alarms": {
+            "type": "integer",
+            "title": "Alarms"
+          },
+          "events": {
+            "type": "integer",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "alarms",
+          "events"
+        ],
+        "title": "PurgeResult",
+        "description": "Підсумок очищення застарілих даних."
+      },
       "RefreshRequest": {
         "properties": {
           "refresh_token": {
@@ -4747,6 +7848,330 @@
         "title": "RegisterRequest",
         "description": "Дані для створення облікового запису."
       },
+      "RestoreResult": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BackupKind"
+          },
+          "rows": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "rows"
+        ],
+        "title": "RestoreResult",
+        "description": "Кількість відновлених рядків за таблицями."
+      },
+      "ScenarioCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioStepIn"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Steps"
+          },
+          "expected": {
+            "items": {
+              "$ref": "#/components/schemas/ExpectedAlarm"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Expected",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "steps"
+        ],
+        "title": "ScenarioCreate",
+        "description": "Новий тестовий сценарій."
+      },
+      "ScenarioDoc": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/StepDoc"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Steps"
+          },
+          "expected": {
+            "items": {
+              "$ref": "#/components/schemas/ExpectedDoc"
+            },
+            "type": "array",
+            "title": "Expected",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "steps"
+        ],
+        "title": "ScenarioDoc",
+        "description": "Тестовий сценарій."
+      },
+      "ScenarioOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "facility_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Facility Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "steps": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "expected": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Expected"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "facility_id",
+          "name",
+          "description",
+          "steps",
+          "expected",
+          "created_at"
+        ],
+        "title": "ScenarioOut",
+        "description": "Тестовий сценарій."
+      },
+      "ScenarioRunOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "scenario_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Scenario Id"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "actual": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Actual"
+          },
+          "mismatches": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Mismatches"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scenario_id",
+          "passed",
+          "actual",
+          "mismatches",
+          "started_at"
+        ],
+        "title": "ScenarioRunOut",
+        "description": "Результат відтворення сценарію."
+      },
+      "ScenarioRunRequest": {
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/FacilityMode",
+            "default": "armed_away"
+          }
+        },
+        "type": "object",
+        "title": "ScenarioRunRequest",
+        "description": "Параметри запуску: режим, у якому перебуває об'єкт на початку."
+      },
+      "ScenarioStepIn": {
+        "properties": {
+          "offset_ms": {
+            "type": "integer",
+            "maximum": 86400000.0,
+            "minimum": 0.0,
+            "title": "Offset Ms"
+          },
+          "sensor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sensor Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/EventType"
+          }
+        },
+        "type": "object",
+        "required": [
+          "offset_ms",
+          "sensor_id",
+          "state"
+        ],
+        "title": "ScenarioStepIn",
+        "description": "Крок: через offset_ms від початку датчик sensor_id переходить у state."
+      },
+      "ScenarioUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "steps": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ScenarioStepIn"
+                },
+                "type": "array",
+                "maxItems": 500,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Steps"
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ExpectedAlarm"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          }
+        },
+        "type": "object",
+        "title": "ScenarioUpdate",
+        "description": "Зміна сценарію."
+      },
       "ScheduleAction": {
         "type": "string",
         "enum": [
@@ -4795,6 +8220,44 @@
         ],
         "title": "ScheduleCreate",
         "description": "Розклад автоматичної постановки чи зняття (місцевий час об'єкта)."
+      },
+      "ScheduleDoc": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "action": {
+            "$ref": "#/components/schemas/ScheduleAction"
+          },
+          "days_mask": {
+            "type": "integer",
+            "maximum": 127.0,
+            "minimum": 1.0,
+            "title": "Days Mask"
+          },
+          "local_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Local Time"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "action",
+          "days_mask",
+          "local_time"
+        ],
+        "title": "ScheduleDoc",
+        "description": "Розклад постановки або зняття."
       },
       "ScheduleOut": {
         "properties": {
@@ -4942,6 +8405,45 @@
         "title": "SensorCreate",
         "description": "Новий датчик на каналі вузла."
       },
+      "SensorDoc": {
+        "properties": {
+          "channel": {
+            "type": "integer",
+            "maximum": 63.0,
+            "minimum": 0.0,
+            "title": "Channel"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "sensor_type": {
+            "$ref": "#/components/schemas/SensorType"
+          },
+          "zone": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Zone"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel",
+          "name",
+          "sensor_type",
+          "zone"
+        ],
+        "title": "SensorDoc",
+        "description": "Датчик на каналі вузла; zone — назва зони."
+      },
       "SensorOut": {
         "properties": {
           "id": {
@@ -5041,6 +8543,238 @@
         "title": "SensorUpdate",
         "description": "Зміна датчика."
       },
+      "SessionsRevoked": {
+        "properties": {
+          "revoked": {
+            "type": "integer",
+            "title": "Revoked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revoked"
+        ],
+        "title": "SessionsRevoked",
+        "description": "Кількість завершених сесій."
+      },
+      "SettingsDocument-Input": {
+        "properties": {
+          "format_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Format Version",
+            "default": 1
+          },
+          "exported_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exported At"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/FacilitySettingsUpdate-Input",
+            "default": {}
+          },
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/ZoneDoc"
+            },
+            "type": "array",
+            "title": "Zones",
+            "default": []
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/NodeDoc"
+            },
+            "type": "array",
+            "title": "Nodes",
+            "default": []
+          },
+          "schedules": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDoc"
+            },
+            "type": "array",
+            "title": "Schedules",
+            "default": []
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioDoc"
+            },
+            "type": "array",
+            "title": "Scenarios",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "SettingsDocument",
+        "description": "Налаштування об'єкта для перенесення."
+      },
+      "SettingsDocument-Output": {
+        "properties": {
+          "format_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Format Version",
+            "default": 1
+          },
+          "exported_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exported At"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/FacilitySettingsUpdate-Output",
+            "default": {}
+          },
+          "zones": {
+            "items": {
+              "$ref": "#/components/schemas/ZoneDoc"
+            },
+            "type": "array",
+            "title": "Zones",
+            "default": []
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/NodeDoc"
+            },
+            "type": "array",
+            "title": "Nodes",
+            "default": []
+          },
+          "schedules": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDoc"
+            },
+            "type": "array",
+            "title": "Schedules",
+            "default": []
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioDoc"
+            },
+            "type": "array",
+            "title": "Scenarios",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "SettingsDocument",
+        "description": "Налаштування об'єкта для перенесення."
+      },
+      "StepDoc": {
+        "properties": {
+          "offset_ms": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Offset Ms"
+          },
+          "node_serial": {
+            "type": "string",
+            "title": "Node Serial"
+          },
+          "channel": {
+            "type": "integer",
+            "title": "Channel"
+          },
+          "state": {
+            "$ref": "#/components/schemas/EventType"
+          }
+        },
+        "type": "object",
+        "required": [
+          "offset_ms",
+          "node_serial",
+          "channel",
+          "state"
+        ],
+        "title": "StepDoc",
+        "description": "Крок сценарію: датчик задається вузлом і каналом."
+      },
+      "SystemStats": {
+        "properties": {
+          "users": {
+            "type": "integer",
+            "title": "Users"
+          },
+          "facilities": {
+            "type": "integer",
+            "title": "Facilities"
+          },
+          "nodes": {
+            "type": "integer",
+            "title": "Nodes"
+          },
+          "events": {
+            "type": "integer",
+            "title": "Events"
+          },
+          "alarms": {
+            "type": "integer",
+            "title": "Alarms"
+          },
+          "archive_bytes": {
+            "type": "integer",
+            "title": "Archive Bytes",
+            "description": "Розмір подій і тривог разом з індексами"
+          },
+          "database_bytes": {
+            "type": "integer",
+            "title": "Database Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "users",
+          "facilities",
+          "nodes",
+          "events",
+          "alarms",
+          "archive_bytes",
+          "database_bytes"
+        ],
+        "title": "SystemStats",
+        "description": "Статистика системи."
+      },
       "TariffOut": {
         "properties": {
           "id": {
@@ -5105,6 +8839,31 @@
         ],
         "title": "TariffOut",
         "description": "Тарифний план і його обмеження."
+      },
+      "TariffUpdate": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "TariffUpdate",
+        "description": "Новий тарифний план користувача."
+      },
+      "TimeFormat": {
+        "type": "string",
+        "enum": [
+          "24h",
+          "12h"
+        ],
+        "title": "TimeFormat",
+        "description": "Формат відображення часу в клієнтах."
       },
       "TokenPair": {
         "properties": {
@@ -5243,6 +9002,9 @@
           "measurement_system": {
             "$ref": "#/components/schemas/MeasurementSystem"
           },
+          "time_format": {
+            "$ref": "#/components/schemas/TimeFormat"
+          },
           "totp_enabled": {
             "type": "boolean",
             "title": "Totp Enabled"
@@ -5280,6 +9042,7 @@
           "locale",
           "timezone",
           "measurement_system",
+          "time_format",
           "totp_enabled",
           "is_platform_admin",
           "tariff_plan",
@@ -5330,6 +9093,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/MeasurementSystem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "time_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeFormat"
               },
               {
                 "type": "null"
@@ -5400,6 +9173,26 @@
         ],
         "title": "ZoneCreate",
         "description": "Нова зона об'єкта."
+      },
+      "ZoneDoc": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "zone_type": {
+            "$ref": "#/components/schemas/ZoneType"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "zone_type"
+        ],
+        "title": "ZoneDoc",
+        "description": "Зона об'єкта."
       },
       "ZoneOut": {
         "properties": {

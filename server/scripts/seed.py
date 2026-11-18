@@ -5,6 +5,11 @@
 SEED_PASSWORD; якщо її немає, генерується випадковий і виводиться один раз.
 Токен демо-вузла також виводиться один раз (у БД зберігається лише хеш).
 
+Для показу ЛБ3 додаються: об'єкт під охороною (armed_away), три закриті
+тривоги (дві позначені як хибні), тестовий сценарій і два сертифікати вузла
+(чинний і відкликаний). Центр сертифікації створюється в CA_DIR, якщо його
+ще немає. Повторний запуск нічого не дублює.
+
 Запуск із каталогу server:
     python -m scripts.seed
 """
@@ -12,13 +17,34 @@ SEED_PASSWORD; якщо її немає, генерується випадков
 import os
 import secrets
 from datetime import UTC, datetime, time, timedelta
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import SessionLocal
 from app.models.devices import Node, Sensor
-from app.models.enums import FacilityRole, ScheduleAction, SensorType, ZoneType
+from app.models.enums import (
+    AckAction,
+    ActionSource,
+    AlarmLevel,
+    AlarmStatus,
+    AuthMethod,
+    EventType,
+    FacilityMode,
+    FacilityRole,
+    ScheduleAction,
+    SensorType,
+    ZoneType,
+)
+from app.models.events import (
+    Alarm,
+    AlarmAcknowledgement,
+    AlarmEvent,
+    Event,
+    TestScenario,
+)
 from app.models.facilities import (
     Facility,
     FacilityMember,
@@ -28,11 +54,13 @@ from app.models.facilities import (
 )
 from app.models.users import TariffPlan, User
 from app.security import generate_token, hash_password, hash_token
+from app.services import arming, certificates
+from app.services.state_machine import ModeTrigger
 
 DEMO_DOMAIN = "oberih.local"
 # Пошта -> (повне ім'я, роль на демо-об'єкті або None, тариф).
 DEMO_USERS: dict[str, tuple[str, FacilityRole | None, str]] = {
-    "owner": ("Олена Власник", FacilityRole.OWNER, "standard"),
+    "owner": ("Олена Власник", FacilityRole.OWNER, "professional"),
     "family": ("Петро Родина", FacilityRole.FAMILY, "basic"),
     "guest": ("Ірина Гість", FacilityRole.GUEST, "basic"),
     "installer": ("Максим Монтажник", FacilityRole.INSTALLER, "professional"),
@@ -52,6 +80,9 @@ DEMO_ZONES = {
     "Корпус вузла": ZoneType.ALWAYS_ON,
 }
 WEEKDAYS_MASK = 0b0011111  # понеділок — п'ятниця
+DEMO_SCENARIO = "Проникнення через вхідні двері"
+# Закриті тривоги для статистики FAR: (днів тому, хибна?).
+DEMO_ALARMS = ((5, True), (3, True), (1, False))
 
 
 def seed(db: Session, password: str) -> str | None:
@@ -131,6 +162,100 @@ def seed(db: Session, password: str) -> str | None:
     return token
 
 
+def seed_lab3(db: Session) -> bool:
+    """Додає демо-дані ЛБ3; повертає False, якщо їх уже створено."""
+    facility = db.scalars(
+        select(Facility).where(Facility.name == "Демо-квартира")
+    ).one()
+    exists = select(TestScenario.id).where(
+        TestScenario.facility_id == facility.id, TestScenario.name == DEMO_SCENARIO
+    )
+    if db.scalar(exists) is not None:
+        return False
+    owner = db.get_one(User, facility.owner_id)
+    owner.tariff_plan = db.scalars(
+        select(TariffPlan).where(TariffPlan.code == "professional")
+    ).one()
+    node = db.scalars(select(Node).where(Node.facility_id == facility.id)).first()
+    assert node is not None, "demo node is missing"
+    sensors = {sensor.channel: sensor for sensor in node.sensors}
+    _demo_alarms(db, facility, node, sensors[1], owner)
+    db.add(
+        TestScenario(
+            facility_id=facility.id,
+            name=DEMO_SCENARIO,
+            description="Двері, потім рух у вітальні через 20 с",
+            steps=[
+                {"offset_ms": 0, "sensor_id": str(sensors[1].id), "state": "opened"},
+                {
+                    "offset_ms": 20000,
+                    "sensor_id": str(sensors[3].id),
+                    "state": "motion",
+                },
+            ],
+            expected=[{"level": "confirmed", "zone_id": None}],
+            created_by=owner.id,
+        )
+    )
+    if facility.mode == FacilityMode.DISARMED:
+        arming.transition(db, facility, ModeTrigger.ARM_AWAY, ActionSource.SCHEDULE)
+        arming.transition(
+            db, facility, ModeTrigger.EXIT_DELAY_EXPIRED, ActionSource.SYSTEM
+        )
+    db.commit()
+    _demo_certificates(db, node)
+    return True
+
+
+def _demo_alarms(
+    db: Session, facility: Facility, node: Node, door: Sensor, owner: User
+) -> None:
+    """Закриті тривоги геркона дверей; дві з них позначені як хибні."""
+    now = datetime.now(UTC)
+    for index, (days_ago, is_false) in enumerate(DEMO_ALARMS, start=1):
+        moment = now - timedelta(days=days_ago)
+        event = Event(
+            facility_id=facility.id,
+            node_id=node.id,
+            sensor_id=door.id,
+            event_type=EventType.OPENED,
+            seq=900000 + index,
+            occurred_at=moment,
+        )
+        alarm = Alarm(
+            facility_id=facility.id,
+            zone_id=door.zone_id,
+            level=AlarmLevel.ALARM,
+            status=AlarmStatus.RESOLVED,
+            confidence=Decimal("0.50"),
+            is_false=is_false,
+            opened_at=moment,
+            closed_at=moment + timedelta(minutes=2),
+        )
+        db.add_all([event, alarm])
+        db.flush()
+        db.add(AlarmEvent(alarm_id=alarm.id, event_id=event.id))
+        db.add(
+            AlarmAcknowledgement(
+                alarm_id=alarm.id,
+                user_id=owner.id,
+                action=AckAction.MARK_FALSE if is_false else AckAction.RESOLVE,
+                auth_method=AuthMethod.PASSWORD,
+            )
+        )
+
+
+def _demo_certificates(db: Session, node: Node) -> None:
+    """Чинний і відкликаний сертифікати вузла (ключі не зберігаються)."""
+    if not (settings.ca_dir / certificates.CA_CERT_FILE).exists():
+        certificates.create_ca(settings.ca_dir)
+    admin = db.scalars(select(User).where(User.is_platform_admin)).first()
+    assert admin is not None, "demo admin is missing"
+    old = certificates.issue(db, settings.ca_dir, admin, node.id, 365)
+    certificates.revoke(db, admin, old.certificate.id)
+    certificates.issue(db, settings.ca_dir, admin, node.id, 365)
+
+
 def main() -> None:
     """Точка входу командного рядка."""
     password = os.environ.get("SEED_PASSWORD")
@@ -139,8 +264,11 @@ def main() -> None:
         password = secrets.token_urlsafe(9)
     with SessionLocal() as db:
         token = seed(db, password)
+        added_lab3 = seed_lab3(db)
     if token is None:
-        print("Демо-дані вже створено, нічого не змінено.")
+        print("Базові демо-дані вже є.")
+        if added_lab3:
+            print("Додано демо-дані ЛБ3: тривоги, сценарій, сертифікати.")
         return
     print("Демо-дані створено. Користувачі:")
     for login, (_, role, tariff) in DEMO_USERS.items():
@@ -150,6 +278,8 @@ def main() -> None:
     if generated:
         print(f"Пароль усіх демо-користувачів (показується один раз): {password}")
     print(f"Токен пристрою ESP32-DEMO-001 (показується один раз): {token}")
+    if added_lab3:
+        print("Додано демо-дані ЛБ3: тривоги, сценарій, сертифікати.")
 
 
 if __name__ == "__main__":

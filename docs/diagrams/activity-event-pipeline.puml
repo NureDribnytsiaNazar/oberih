@@ -1,0 +1,65 @@
+@startuml activity-event-pipeline
+' Діаграма діяльності: обробка пакета подій вузла (розділ 2.2.2 V&S).
+' Відповідає коду: app/services/pipeline/processor.py (ingest_batch,
+' _process_reading, _apply_decision) і core.py (is_duplicate, evaluate).
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #F8F8F8
+title Обробка пакета подій вузла (ingest_batch)
+
+start
+:POST /api/v1/device/events\n(X-Device-Token);
+:get_device_node(): хеш токена,\nвузол не вимкнено,\nсертифікат чинний (якщо є);
+if (Вузол автентифіковано?) then (ні)
+  :401 device_unauthorized /\ncertificate_invalid;
+  stop
+endif
+:Валідація пакета (Pydantic):\nканал, тип події, seq, час з поясом;
+if (Усі канали відомі вузлу?) then (ні)
+  :400 unknown_channel\n(жодна подія не записується);
+  stop
+endif
+:arming.apply_due_timer():\nзастосувати прострочену затримку;
+:nodes.mark_seen():\nonline (+ node_online після офлайну);
+
+repeat :Наступна подія за часом і seq;
+  :Крок 2. _is_stored_duplicate():\nтой самий датчик і тип,\nseq = seq' або |t − t'| < Δ(дубл.);
+  if (Дублікат?) then (так)
+    :status = duplicate;
+  else (ні)
+    :Крок 3. _store_event():\nзапис в архів із часом вузла (UTC);
+    :Крок 4. core.is_monitored(mode, reading);
+    if (Подія лише архівується?) then (так)
+      note right
+        disarmed, exit_delay: периметр і внутрішні зони
+        armed_home: внутрішні зони й PIR виключено
+        closed, tamper_restored: не спрацювання
+      end note
+    else (ні)
+      :Крок 5. core.evaluate():\nC(t) = Σ w(i) по різних датчиках\nу вікні [t − Δ(підтв.), t];
+      if (Тампер або цілодобова зона?) then (так)
+        :рівень confirmed,\nтригер INSTANT_ALARM;
+      else (ні)
+        if (C ≥ confirmed_threshold?) then (так)
+          :confirmed;
+        elseif (C ≥ alarm_threshold?) then (так)
+          :alarm;
+        else (ні)
+          :warning (без зміни режиму);
+        endif
+        :тригер INTRUSION,\nякщо об'єкт під охороною;
+      endif
+      :Крок 6. alarm_store.record_decision():\nнова тривога або підвищення рівня\nпоточної, подія в alarm_events;
+      if (Є тригер режиму?) then (так)
+        :arming.transition():\nперевірка за state_machine,\nзапис arming_log (source = system);
+      endif
+      :notifier.alarm_changed()\n(запис у журнал застосунку);
+    endif
+    :status = accepted;
+  endif
+repeat while (Ще є події?) is (так)
+->ні;
+:node.last_seq = max(seq);\ncommit (одна транзакція);
+:200 {accepted, duplicates, last_seq, results};
+stop
+@enduml

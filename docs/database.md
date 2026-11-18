@@ -228,6 +228,7 @@ erDiagram
 |---|---|
 | `0001_initial_schema` | 23 таблиці, первинні й зовнішні ключі, обмеження CHECK, індекси |
 | `0002_tariffs_triggers_indexes` | Тарифні плани; тригер `forbid_log_change` для `arming_log`, `alarm_acknowledgements`, `audit_log`; індекси `ix_alarms_facility_status`, `ix_audit_log_entity`; унікальний `uq_nodes_device_token_hash` |
+| `0003_business_logic` | Статус тривоги `cancelled`; `users.blocked_at` і `users.time_format`; `scenario_runs.mismatches`; індекс `ix_events_dedup_window`; ключ `uq_events_dedup_key` знову вважає NULL різними (службові події вузла) |
 
 Повна структура таблиць зі стовпцями й типами — на діаграмі
 [`diagrams/db-structure.png`](diagrams/db-structure.png). Її генерує скрипт
@@ -239,7 +240,21 @@ erDiagram
 |---|---|
 | Стрічка подій об'єкта за часом | `ix_events_facility_occurred (facility_id, occurred_at)` |
 | Події датчика за часом (статистика FAR) | `ix_events_sensor_occurred (sensor_id, occurred_at)` |
+| Усунення дублікатів у вікні Δ(дубл.) | `ix_events_dedup_window (sensor_id, event_type, occurred_at)` |
 | Тривоги об'єкта за часом і за станом | `ix_alarms_facility_opened`, `ix_alarms_facility_status` |
 | Журнал охорони об'єкта | `ix_arming_log_facility_created (facility_id, created_at)` |
 | Аудит щодо сутності | `ix_audit_log_entity (entity_type, entity_id)` |
 | Автентифікація вузла за токеном | `uq_nodes_device_token_hash` |
+
+## Обробка даних у ЛБ3
+
+| Задача | Як реалізовано в БД |
+|---|---|
+| Поточна тривога об'єкта | `alarms.status IN ('open', 'acknowledged')`, індекс `ix_alarms_facility_status` |
+| Скасована тривога (зняття під час затримки входу) | `alarms.status = 'cancelled'`, не враховується у FAR |
+| Статистика FAR | `GROUP BY` за датчиками (`alarm_events` -> `events.sensor_id`), зонами (`alarms.zone_id`) і годиною доби (`timezone(tz, opened_at)`) |
+| Строк зберігання | події й закриті тривоги старші за `tariff_plans.archive_days` власника видаляються пакетами по 1000 |
+| Резервні копії | логічний дамп таблиць у JSON (gzip), реєстр у `backups` (sha256, розмір, статус) |
+| Сертифікати вузлів | `certificates` (PEM, серійний номер, строки, статус); приватні ключі не зберігаються |
+| Сортування назв | ICU-правила `uk-UA-x-icu`, `en-US-x-icu` у `ORDER BY ... COLLATE` |
+

@@ -73,10 +73,15 @@ def list_alarms(
 
 @router.post("/alarms/{alarm_id}/acknowledge", response_model=AlarmOut)
 def acknowledge_alarm(
-    alarm_id: uuid.UUID, data: AcknowledgeRequest, user: CurrentUser, db: DbSession
+    alarm_id: uuid.UUID,
+    data: AcknowledgeRequest,
+    user: CurrentUser,
+    db: DbSession,
+    locale: UserLocale,
 ) -> object:
     """Підтвердження, позначка «хибна» або закриття тривоги."""
-    return service.acknowledge(db, user, alarm_id, data)
+    alarm = service.acknowledge(db, user, alarm_id, data)
+    return alarm_view(alarm, viewer_prefs(user, locale))
 
 
 @router.post("/alarms/{alarm_id}/summary", response_model=IncidentSummaryOut)

@@ -1,0 +1,41 @@
+@startuml sequence-timers
+' Діаграма взаємодії: фоновий виконавець таймерів (app/worker.py).
+skinparam shadowing false
+skinparam defaultFontName Arial
+title Фоновий виконавець: таймери, недоступні вузли, сертифікати
+
+participant "FastAPI lifespan\nmain.py" as Life
+participant "worker.run_worker" as Worker
+participant "worker.run_once\n(окремий потік)" as Once
+participant "timers.process_timers" as Timers
+participant "arming.apply_due_timer\n+ transition" as Arming
+participant "nodes.detect_offline" as Nodes
+participant "certificates.mark_expired" as Certs
+participant "retention.purge_expired_data" as Purge
+database "PostgreSQL" as Db
+
+Life -> Worker : create_task (якщо WORKER_ENABLED)
+loop кожні WORKER_INTERVAL_S секунд (5 с)
+  Worker -> Once : asyncio.to_thread(run_once, now, purge)
+  Once -> Timers : process_timers(db, now)
+  Timers -> Db : SELECT facilities WHERE mode IN (exit_delay, entry_delay)
+  loop для кожного об'єкта із затримкою
+    Timers -> Arming : apply_due_timer(db, facility, now)
+    Arming -> Arming : expired_delay_trigger()\nexit_delay -> armed_away\nentry_delay -> alarm
+    Arming -> Db : INSERT arming_log (source = system)
+  end
+  Timers -> Nodes : detect_offline(db, now)
+  Nodes -> Db : online-вузли з now − last_seen > T(опит.) × N(проп.)
+  Nodes -> Db : status = offline, INSERT events (node_offline) — один раз
+  Timers -> Certs : mark_expired(db, now)
+  Certs -> Db : active і not_after <= now -> expired
+  Timers -> Db : COMMIT
+  opt раз на PURGE_INTERVAL_H годин (24)
+    Once -> Purge : purge_expired_data(db, now)
+    Purge -> Db : DELETE тривог і подій, старших за archive_days тарифу (пакетами)
+    Purge -> Db : INSERT audit_log (data.purge)
+  end
+  Worker -> Worker : чекати interval або сигнал зупинки
+end
+Life -> Worker : stop.set() під час зупинки застосунку
+@enduml

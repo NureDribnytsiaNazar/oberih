@@ -31,12 +31,14 @@ entity "users" as users {
   * locale : enum locale
   * timezone : varchar(64)
   * measurement_system : enum measurementsystem
+  * time_format : enum timeformat
     totp_secret : varchar(64)
   * totp_enabled : boolean
   * is_platform_admin : boolean
   * is_active : boolean
   * tariff_plan_id : uuid <<FK>>
     privacy_consent_at : timestamp with time zone
+    blocked_at : timestamp with time zone
     anonymized_at : timestamp with time zone
   * created_at : timestamp with time zone
   * updated_at : timestamp with time zone
@@ -231,6 +233,7 @@ entity "scenario_runs" as scenario_runs {
   * scenario_id : uuid <<FK>>
   * passed : boolean
   * actual : jsonb
+  * mismatches : jsonb
   * started_at : timestamp with time zone
 }
 
