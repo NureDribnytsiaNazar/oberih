@@ -134,6 +134,50 @@ MESSAGES: dict[str, dict[Locale, str]] = {
         Locale.UK: "Пристрій не автентифіковано",
         Locale.EN: "Device is not authenticated",
     },
+    "account_blocked": {
+        Locale.UK: "Обліковий запис заблоковано адміністратором",
+        Locale.EN: "The account has been blocked by an administrator",
+    },
+    "cannot_block_self": {
+        Locale.UK: "Не можна заблокувати власний обліковий запис",
+        Locale.EN: "You cannot block your own account",
+    },
+    "last_admin": {
+        Locale.UK: "Не можна зняти права в останнього адміністратора",
+        Locale.EN: "The last administrator cannot lose administrator rights",
+    },
+    "user_anonymized": {
+        Locale.UK: "Обліковий запис знеособлено, його не можна змінити",
+        Locale.EN: "The account has been anonymized and cannot be changed",
+    },
+    "unknown_tariff": {
+        Locale.UK: "Невідомий тарифний план",
+        Locale.EN: "Unknown tariff plan",
+    },
+    "backup_failed": {
+        Locale.UK: "Не вдалося записати файл резервної копії",
+        Locale.EN: "The backup file could not be written",
+    },
+    "backup_not_ready": {
+        Locale.UK: "Резервна копія не завершена",
+        Locale.EN: "The backup is not completed",
+    },
+    "backup_file_missing": {
+        Locale.UK: "Файл резервної копії не знайдено",
+        Locale.EN: "The backup file was not found",
+    },
+    "backup_corrupted": {
+        Locale.UK: "Файл резервної копії пошкоджено (контрольна сума не збігається)",
+        Locale.EN: "The backup file is corrupted (checksum mismatch)",
+    },
+    "backup_unsupported_format": {
+        Locale.UK: "Непідтримувана версія формату резервної копії",
+        Locale.EN: "Unsupported backup format version",
+    },
+    "backup_restore_failed": {
+        Locale.UK: "Відновлення не вдалося, жодних змін не внесено",
+        Locale.EN: "Restore failed; no changes were made",
+    },
     "certificate_invalid": {
         Locale.UK: "Сертифікат пристрою відкликано або строк його дії минув",
         Locale.EN: "The device certificate is revoked or expired",

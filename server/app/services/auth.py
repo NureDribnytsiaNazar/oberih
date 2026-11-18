@@ -6,7 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.errors import BadRequestError, ConflictError, UnauthorizedError
+from app.errors import (
+    BadRequestError,
+    ConflictError,
+    ForbiddenError,
+    UnauthorizedError,
+)
 from app.models.users import RefreshToken, TariffPlan, User
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenPair, TotpSetup
 from app.security import (
@@ -59,6 +64,8 @@ def login(db: Session, data: LoginRequest, user_agent: str | None) -> TokenPair:
         or not verify_password(data.password, user.password_hash)
     ):
         raise UnauthorizedError("invalid_credentials")
+    if user.blocked_at is not None:
+        raise ForbiddenError("account_blocked")
     if user.totp_enabled:
         if data.totp_code is None:
             raise UnauthorizedError("totp_required")
@@ -75,7 +82,7 @@ def login(db: Session, data: LoginRequest, user_agent: str | None) -> TokenPair:
 def refresh(db: Session, refresh_token: str, user_agent: str | None) -> TokenPair:
     """Обмінює токен оновлення на нову пару (старий токен відкликається)."""
     stored = _find_active_refresh_token(db, refresh_token)
-    if stored is None or not stored.user.is_active:
+    if stored is None or not stored.user.is_active or stored.user.blocked_at:
         raise UnauthorizedError("invalid_token")
     stored.revoked_at = datetime.now(UTC)
     tokens = _issue_tokens(db, stored.user, user_agent)

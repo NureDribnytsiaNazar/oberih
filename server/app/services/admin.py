@@ -2,10 +2,13 @@
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.admin import AuditLogEntry
+from app.models.devices import Node
+from app.models.events import Alarm, Event
+from app.models.facilities import Facility
 from app.models.users import TariffPlan, User
 from app.pagination import PageParams, paginate
 from app.services import audit
@@ -46,3 +49,28 @@ def list_audit_log(
 def list_tariffs(db: Session) -> list[TariffPlan]:
     """Тарифні плани за зростанням ціни."""
     return list(db.scalars(select(TariffPlan).order_by(TariffPlan.price_month)))
+
+
+def system_stats(db: Session, admin: User) -> dict[str, int]:
+    """Кількість основних записів і розмір архіву подій у байтах."""
+    counts = {
+        name: int(db.scalar(select(func.count()).select_from(model)) or 0)
+        for name, model in (
+            ("users", User),
+            ("facilities", Facility),
+            ("nodes", Node),
+            ("events", Event),
+            ("alarms", Alarm),
+        )
+    }
+    archive = sum(
+        int(db.scalar(select(func.pg_total_relation_size(table))) or 0)
+        for table in ("events", "alarms", "alarm_events")
+    )
+    counts["archive_bytes"] = archive
+    counts["database_bytes"] = int(
+        db.scalar(select(func.pg_database_size(func.current_database()))) or 0
+    )
+    audit.record(db, admin.id, "admin.stats_view")
+    db.commit()
+    return counts
