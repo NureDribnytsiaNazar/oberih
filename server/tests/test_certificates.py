@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from cryptography import x509
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -67,7 +68,11 @@ def test_issue_returns_key_once_and_is_signed_by_ca(
 
 
 def test_revoked_certificate_fails_node_auth(
-    client: TestClient, admin: dict[str, str], device: dict[str, Any], ca_dir: Path
+    client: TestClient,
+    db: Session,
+    admin: dict[str, str],
+    device: dict[str, Any],
+    ca_dir: Path,
 ) -> None:
     create_ca(ca_dir)
     cert = issue(client, admin, device["node_id"])["certificate"]
@@ -80,6 +85,8 @@ def test_revoked_certificate_fails_node_auth(
 
     response = heartbeat(client, device)
     assert response.json()["error"]["code"] == "certificate_invalid"
+    actions = db.scalars(text("SELECT action FROM audit_log")).all()
+    assert {"certificate.issue", "certificate.revoke"} <= set(actions)
     crl = client.get(f"{URL}/crl", headers=admin).json()
     assert crl["revoked_serials"] == [cert["serial_number"]]
     again = client.post(

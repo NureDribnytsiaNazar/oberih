@@ -1,6 +1,7 @@
 """Налаштування серверної частини, що зчитуються зі змінних середовища."""
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -36,6 +37,12 @@ class Settings(BaseSettings):
     # Каталоги резервних копій і центру сертифікації (не в репозиторії).
     backup_dir: Path = Path("backups")
     ca_dir: Path = Path("ca")
+
+    # Постачальник хронології інциденту: template (за замовчуванням) або
+    # external (заглушка зовнішньої мовної моделі, реальних викликів немає).
+    summary_provider: Literal["template", "external"] = "template"
+    llm_api_url: str | None = None
+    llm_model: str | None = None
 
 
 settings = Settings()

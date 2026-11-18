@@ -10,8 +10,14 @@ from app.deps import CurrentUser, DbSession, Paging, UserLocale
 from app.models.enums import AlarmLevel, AlarmStatus, EventType
 from app.pagination import page_response
 from app.schemas.common import Page
-from app.schemas.events import AcknowledgeRequest, AlarmOut, EventOut
+from app.schemas.events import (
+    AcknowledgeRequest,
+    AlarmOut,
+    EventOut,
+    IncidentSummaryOut,
+)
 from app.services import alarms as service
+from app.services import incidents
 from app.services.access import Permission, require_access
 from app.services.presentation import alarm_view, event_view, viewer_prefs
 
@@ -71,3 +77,18 @@ def acknowledge_alarm(
 ) -> object:
     """Підтвердження, позначка «хибна» або закриття тривоги."""
     return service.acknowledge(db, user, alarm_id, data)
+
+
+@router.post("/alarms/{alarm_id}/summary", response_model=IncidentSummaryOut)
+def summarize_alarm(
+    alarm_id: uuid.UUID, user: CurrentUser, db: DbSession, locale: UserLocale
+) -> object:
+    """Стисла хронологія інциденту (професійний тариф); модель нічим не керує."""
+    provider = incidents.default_provider()
+    return incidents.summarize_alarm(db, user, alarm_id, locale, provider)
+
+
+@router.get("/alarms/{alarm_id}/summaries", response_model=list[IncidentSummaryOut])
+def list_summaries(alarm_id: uuid.UUID, user: CurrentUser, db: DbSession) -> object:
+    """Раніше сформовані хронології тривоги."""
+    return incidents.list_summaries(db, user, alarm_id)

@@ -191,6 +191,18 @@ class AlarmOut(ORMModel):
     opened_at_text: str | None = None
 
 
+class IncidentSummaryOut(ORMModel):
+    """Стисла хронологія інциденту: факти окремо від припущень."""
+
+    id: uuid.UUID
+    alarm_id: uuid.UUID
+    language: str
+    facts: str
+    assumptions: str
+    model_name: str
+    created_at: datetime
+
+
 class AcknowledgeRequest(BaseModel):
     """Дія користувача щодо тривоги."""
 

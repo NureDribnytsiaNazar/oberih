@@ -211,6 +211,36 @@ MESSAGES: dict[str, dict[Locale, str]] = {
     },
     "event.node_offline": {Locale.UK: "Вузол недоступний", Locale.EN: "Node offline"},
     "event.node_online": {Locale.UK: "Вузол на зв'язку", Locale.EN: "Node online"},
+    "incident.fact": {
+        Locale.UK: "[подія №{number}] {time} UTC — зона «{zone}»: {event}",
+        Locale.EN: '[event #{number}] {time} UTC — zone "{zone}": {event}',
+    },
+    "incident.assume_tamper": {
+        Locale.UK: "Можлива спроба саботажу: відкрито або знято корпус вузла.",
+        Locale.EN: "Possible sabotage attempt: the node case was opened or removed.",
+    },
+    "incident.assume_intrusion": {
+        Locale.UK: "Імовірне проникнення: відчинення на периметрі з подальшим "
+        "рухом усередині приміщення.",
+        Locale.EN: "Likely intrusion: a perimeter opening followed by motion "
+        "inside the premises.",
+    },
+    "incident.assume_door_only": {
+        Locale.UK: "Відчинення без підтвердження рухом: можливе хибне "
+        "спрацювання або охорону не знято вчасно.",
+        Locale.EN: "Opening without confirming motion: possibly a false alarm "
+        "or the system was not disarmed in time.",
+    },
+    "incident.assume_motion_only": {
+        Locale.UK: "Рух без відчинення периметра: можливе хибне спрацювання "
+        "датчика руху або особа вже була всередині.",
+        Locale.EN: "Motion without a perimeter opening: possibly a false motion "
+        "detection or someone was already inside.",
+    },
+    "llm_unavailable": {
+        Locale.UK: "Зовнішня мовна модель недоступна",
+        Locale.EN: "The external language model is unavailable",
+    },
     "far.check_sensor": {
         Locale.UK: "Частка хибних спрацювань висока: перевірте розташування "
         "або чутливість датчика",
