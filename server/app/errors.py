@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.i18n import parse_accept_language, translate
+from app.i18n import resolve_locale, translate
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,10 @@ def error_body(
     request: Request, code: str, details: list[Any] | None = None
 ) -> dict[str, Any]:
     """Формує тіло відповіді з повідомленням мовою клієнта."""
-    locale = parse_accept_language(request.headers.get("accept-language"))
+    locale = resolve_locale(
+        request.headers.get("accept-language"),
+        getattr(request.state, "user_locale", None),
+    )
     error: dict[str, Any] = {"code": code, "message": translate(code, locale)}
     if details:
         error["details"] = details

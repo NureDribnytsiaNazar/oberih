@@ -8,6 +8,7 @@ from fastapi import APIRouter, FastAPI
 
 from app.api.v1 import (
     admin,
+    analytics,
     arming,
     auth,
     device,
@@ -61,6 +62,7 @@ for module in (
     arming,
     device,
     events,
+    analytics,
     admin,
 ):
     api.include_router(module.router)

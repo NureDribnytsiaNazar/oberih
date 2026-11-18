@@ -146,6 +146,16 @@ MESSAGES: dict[str, dict[Locale, str]] = {
         Locale.UK: "Центр сертифікації не ініціалізовано (scripts/init_ca.py)",
         Locale.EN: "The certificate authority is not initialized (scripts/init_ca.py)",
     },
+    "far.check_sensor": {
+        Locale.UK: "Частка хибних спрацювань висока: перевірте розташування "
+        "або чутливість датчика",
+        Locale.EN: "The false alarm rate is high: check the sensor placement "
+        "or sensitivity",
+    },
+    "scenario_sensor_missing": {
+        Locale.UK: "Сценарій посилається на датчик, якого немає на об'єкті",
+        Locale.EN: "The scenario refers to a sensor that is not in the facility",
+    },
     "alarm_closed": {
         Locale.UK: "Тривогу вже закрито",
         Locale.EN: "The alarm is already closed",
@@ -153,10 +163,10 @@ MESSAGES: dict[str, dict[Locale, str]] = {
 }
 
 
-def parse_accept_language(header: str | None) -> Locale:
-    """Обирає мову з заголовка Accept-Language з урахуванням пріоритетів q."""
+def match_accept_language(header: str | None) -> Locale | None:
+    """Мова з заголовка Accept-Language з урахуванням пріоритетів q або None."""
     if not header:
-        return DEFAULT_LOCALE
+        return None
     candidates: list[tuple[float, str]] = []
     for part in header.split(","):
         pieces = part.strip().split(";")
@@ -176,10 +186,24 @@ def parse_accept_language(header: str | None) -> Locale:
         for locale in Locale:
             if locale.value == language:
                 return locale
-    return DEFAULT_LOCALE
+    return None
+
+
+def parse_accept_language(header: str | None) -> Locale:
+    """Мова із заголовка Accept-Language або мова за замовчуванням."""
+    return match_accept_language(header) or DEFAULT_LOCALE
+
+
+def resolve_locale(header: str | None, profile_locale: Locale | None) -> Locale:
+    """Мова відповіді: явний заголовок, потім профіль користувача, потім uk."""
+    return match_accept_language(header) or profile_locale or DEFAULT_LOCALE
 
 
 def translate(code: str, locale: Locale) -> str:
-    """Повертає повідомлення для коду помилки потрібною мовою."""
+    """Повертає текст для коду потрібною мовою.
+
+    У робочому режимі невідомий код не ламає відповідь (повертається
+    загальне повідомлення); повноту перекладів перевіряють тести.
+    """
     messages = MESSAGES.get(code, MESSAGES["internal_error"])
     return messages.get(locale, messages[DEFAULT_LOCALE])

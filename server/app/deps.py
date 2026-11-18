@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import (
     APIKeyHeader,
     HTTPAuthorizationCredentials,
@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.errors import ForbiddenError, UnauthorizedError
 from app.models.devices import Node
-from app.models.enums import NodeStatus
+from app.i18n import resolve_locale
+from app.models.enums import Locale, NodeStatus
 from app.models.users import User
 from app.pagination import PageParams
 from app.security import decode_access_token, hash_token
@@ -33,20 +34,35 @@ _device_key = APIKeyHeader(
 
 
 def get_current_user(
+    request: Request,
     db: DbSession,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
 ) -> User:
-    """Повертає користувача за JWT із заголовка Authorization."""
+    """Повертає користувача за JWT із заголовка Authorization.
+
+    Мову профілю запам'ятовуємо в запиті, щоб нею відповідати на помилки.
+    """
     if credentials is None:
         raise UnauthorizedError()
     user_id = decode_access_token(credentials.credentials)
     user = db.get(User, user_id) if user_id else None
     if user is None or not user.is_active:
         raise UnauthorizedError("invalid_token")
+    if user.blocked_at is not None:
+        raise ForbiddenError("account_blocked")
+    request.state.user_locale = user.locale
     return user
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_user_locale(request: Request, user: CurrentUser) -> Locale:
+    """Мова відповіді: Accept-Language, інакше мова профілю користувача."""
+    return resolve_locale(request.headers.get("accept-language"), user.locale)
+
+
+UserLocale = Annotated[Locale, Depends(get_user_locale)]
 
 
 def get_platform_admin(user: CurrentUser) -> User:
