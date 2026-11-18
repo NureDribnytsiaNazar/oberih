@@ -10,6 +10,13 @@ class Locale(str, enum.Enum):
     EN = "en"
 
 
+class TimeFormat(str, enum.Enum):
+    """Формат відображення часу в клієнтах."""
+
+    H24 = "24h"
+    H12 = "12h"
+
+
 class MeasurementSystem(str, enum.Enum):
     """Система мір для відображення величин."""
 
@@ -88,6 +95,8 @@ class AlarmStatus(str, enum.Enum):
     OPEN = "open"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
+    # Скасована: охорону знято під час затримки входу (законний вхід).
+    CANCELLED = "cancelled"
 
 
 class AckAction(str, enum.Enum):

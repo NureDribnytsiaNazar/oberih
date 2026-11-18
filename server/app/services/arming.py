@@ -1,21 +1,18 @@
-"""Автомат режимів охорони (рисунок 2 Vision & Scope).
+"""Керування режимом охорони об'єкта.
 
-Переходи, які ініціює користувач:
-    disarmed --(away)--> exit_delay --(час минув)--> armed_away
-    disarmed --(home)--> armed_home
-    exit_delay, armed_away, armed_home, entry_delay, alarm --(зняття)--> disarmed
-
-Переходи за подіями датчиків (entry_delay, alarm) реалізуються в ЛБ3;
-у ЛБ2 є лише заглушка для події втручання в корпус (див. device.py).
+Усі зміни режиму виконуються через transition(): вона перевіряє перехід
+за автоматом (state_machine.py), змінює режим і додає запис до журналу
+охорони. Команди користувача (arm, disarm), конвеєр подій і фоновий
+виконавець таймерів користуються лише нею.
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.errors import ConflictError, ForbiddenError
+from app.errors import ForbiddenError
 from app.models.enums import ActionSource, AuthMethod, FacilityMode
 from app.models.events import ArmingLogEntry
 from app.models.facilities import Facility, FacilityMember
@@ -23,67 +20,73 @@ from app.models.users import User
 from app.pagination import PageParams, paginate
 from app.schemas.events import ArmMode, DisarmRequest
 from app.services.access import Permission, has_permission
+from app.services.alarm_store import close_open_alarms
 from app.services.reauth import confirm_action
+from app.services.state_machine import ModeTrigger, expired_delay_trigger, next_mode
 
-DISARMABLE_MODES = {
-    FacilityMode.EXIT_DELAY,
-    FacilityMode.ARMED_AWAY,
-    FacilityMode.ARMED_HOME,
-    FacilityMode.ENTRY_DELAY,
-    FacilityMode.ALARM,
-}
+ARM_TRIGGERS = {ArmMode.AWAY: ModeTrigger.ARM_AWAY, ArmMode.HOME: ModeTrigger.ARM_HOME}
 
 
-def arm_target(current: FacilityMode, mode: ArmMode, exit_delay_s: int) -> FacilityMode:
-    """Режим, у який переходить об'єкт після команди постановки."""
-    if current != FacilityMode.DISARMED:
-        raise ConflictError("invalid_transition")
-    if mode == ArmMode.HOME:
-        # Режим «Вдома» вмикається без затримки виходу.
-        return FacilityMode.ARMED_HOME
-    if exit_delay_s > 0:
-        return FacilityMode.EXIT_DELAY
-    return FacilityMode.ARMED_AWAY
-
-
-def change_mode(
+def transition(
     db: Session,
     facility: Facility,
-    to_mode: FacilityMode,
+    trigger: ModeTrigger,
     source: ActionSource,
     user_id: uuid.UUID | None = None,
     auth_method: AuthMethod | None = None,
     ip_address: str | None = None,
-) -> None:
-    """Змінює режим об'єкта і додає запис до журналу охорони (ПК-3)."""
+    now: datetime | None = None,
+) -> FacilityMode:
+    """Єдина точка зміни режиму. Повертає новий режим.
+
+    Недопустимий перехід піднімає ConflictError. Повторна миттєва тривога
+    в режимі alarm нічого не змінює й не пише в журнал.
+    """
+    target = next_mode(facility.mode, trigger, _delay_for(facility, trigger))
+    if target == facility.mode:
+        return target
     db.add(
         ArmingLogEntry(
             facility_id=facility.id,
             user_id=user_id,
             from_mode=facility.mode,
-            to_mode=to_mode,
+            to_mode=target,
             source=source,
             auth_method=auth_method,
             ip_address=ip_address,
         )
     )
-    facility.mode = to_mode
-    facility.mode_changed_at = datetime.now(UTC)
+    facility.mode = target
+    facility.mode_changed_at = now or datetime.now(UTC)
+    return target
 
 
-def finish_exit_delay(db: Session, facility: Facility) -> None:
-    """Якщо затримка виходу минула, переводить об'єкт під охорону.
+def apply_due_timer(
+    db: Session, facility: Facility, now: datetime | None = None
+) -> ModeTrigger | None:
+    """Завершує затримку виходу чи входу, якщо її час минув.
 
-    Окремого планувальника в ЛБ2 немає, тому перевірка виконується під час
-    кожного звернення до об'єкта через API.
+    Викликається фоновим виконавцем (timers.process_timers) і, як запасний
+    механізм, під час звернення до об'єкта через API. Сам не фіксує
+    транзакцію — це робить той, хто викликає.
     """
-    if facility.mode != FacilityMode.EXIT_DELAY:
-        return
-    ends_at = facility.mode_changed_at + timedelta(
-        seconds=facility.settings.exit_delay_s
+    now = now or datetime.now(UTC)
+    settings = facility.settings
+    trigger = expired_delay_trigger(
+        facility.mode,
+        facility.mode_changed_at,
+        settings.exit_delay_s,
+        settings.entry_delay_s,
+        now,
     )
-    if datetime.now(UTC) >= ends_at:
-        change_mode(db, facility, FacilityMode.ARMED_AWAY, ActionSource.SYSTEM)
+    if trigger is not None:
+        transition(db, facility, trigger, ActionSource.SYSTEM, now=now)
+    return trigger
+
+
+def refresh_mode(db: Session, facility: Facility) -> None:
+    """Запасний лінивий механізм: застосовує прострочений таймер і фіксує."""
+    if apply_due_timer(db, facility) is not None:
         db.commit()
 
 
@@ -96,9 +99,8 @@ def arm(
     ip_address: str | None,
 ) -> Facility:
     """Постановка на охорону в повному режимі або в режимі «Вдома»."""
-    finish_exit_delay(db, facility)
-    target = arm_target(facility.mode, mode, facility.settings.exit_delay_s)
-    change_mode(db, facility, target, source, user.id, None, ip_address)
+    apply_due_timer(db, facility)
+    transition(db, facility, ARM_TRIGGERS[mode], source, user.id, None, ip_address)
     db.commit()
     return facility
 
@@ -114,18 +116,27 @@ def disarm(
     """Зняття з охорони з повторним підтвердженням паролем або кодом TOTP.
 
     Скидати тривогу може лише той, кому дозволено підтверджувати тривоги.
+    Зняття під час затримки входу скасовує відкриту тривогу (законний вхід).
     """
-    finish_exit_delay(db, facility)
-    if facility.mode not in DISARMABLE_MODES:
-        raise ConflictError("invalid_transition")
+    apply_due_timer(db, facility)
     if facility.mode == FacilityMode.ALARM and not has_permission(
         member, Permission.ACK_ALARM
     ):
         raise ForbiddenError()
+    next_mode(facility.mode, ModeTrigger.DISARM)  # перевірка до запиту пароля
     method = confirm_action(user, data.confirmation)
-    change_mode(
-        db, facility, FacilityMode.DISARMED, data.source, user.id, method, ip_address
+    was_entry_delay = facility.mode == FacilityMode.ENTRY_DELAY
+    transition(
+        db,
+        facility,
+        ModeTrigger.DISARM,
+        data.source,
+        user.id,
+        method,
+        ip_address,
     )
+    if was_entry_delay:
+        close_open_alarms(db, facility.id, cancelled=True)
     db.commit()
     return facility
 
@@ -140,3 +151,12 @@ def list_log(
         .order_by(ArmingLogEntry.created_at.desc(), ArmingLogEntry.id.desc())
     )
     return paginate(db, stmt, params)
+
+
+def _delay_for(facility: Facility, trigger: ModeTrigger) -> int:
+    """Тривалість затримки, у яку веде тригер (для нульових затримок)."""
+    if trigger == ModeTrigger.ARM_AWAY:
+        return facility.settings.exit_delay_s
+    if trigger == ModeTrigger.INTRUSION:
+        return facility.settings.entry_delay_s
+    return 0

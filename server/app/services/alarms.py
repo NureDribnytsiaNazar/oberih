@@ -8,14 +8,28 @@ from sqlalchemy.orm import Session
 
 from app.errors import ConflictError, NotFoundError
 from app.models.devices import Sensor
-from app.models.enums import AckAction, AlarmLevel, AlarmStatus, EventType
+from app.models.enums import (
+    AckAction,
+    ActionSource,
+    AlarmLevel,
+    AlarmStatus,
+    AuthMethod,
+    EventType,
+    FacilityMode,
+)
 from app.models.events import Alarm, AlarmAcknowledgement, Event
 from app.models.facilities import Facility
 from app.models.users import User
 from app.pagination import PageParams, paginate
 from app.schemas.events import AcknowledgeRequest
 from app.services.access import Permission, require_access
+from app.services.alarm_store import get_open_alarm
+from app.services.arming import transition
 from app.services.reauth import confirm_action
+from app.services.state_machine import ModeTrigger
+
+CLOSED_STATUSES = (AlarmStatus.RESOLVED, AlarmStatus.CANCELLED)
+ALARM_MODES = (FacilityMode.ALARM, FacilityMode.ENTRY_DELAY)
 
 
 def list_events(
@@ -66,29 +80,19 @@ def acknowledge(
     """Підтвердження, позначення хибною або закриття тривоги.
 
     Дію виконує лише уповноважений користувач після повторного
-    підтвердження; кожна дія додається до журналу підтверджень.
+    підтвердження; кожна дія додається до журналу підтверджень. Коли
+    закрито останню тривогу об'єкта в режимі тривоги чи затримки входу,
+    об'єкт знімається з охорони (рисунок 2 Vision & Scope).
     """
     alarm = db.get(Alarm, alarm_id)
     if alarm is None:
         raise NotFoundError()
-    require_access(db, alarm.facility_id, user, Permission.ACK_ALARM)
-    if alarm.status == AlarmStatus.RESOLVED:
+    facility, _ = require_access(db, alarm.facility_id, user, Permission.ACK_ALARM)
+    if alarm.status in CLOSED_STATUSES:
         raise ConflictError("alarm_closed")
     method = confirm_action(user, data.confirmation)
 
-    now = datetime.now(UTC)
-    if data.action == AckAction.ACKNOWLEDGE:
-        alarm.status = AlarmStatus.ACKNOWLEDGED
-    elif data.action == AckAction.MARK_FALSE:
-        # Позначка «хибна» потрібна для статистики FAR (ЛБ3).
-        alarm.is_false = True
-        alarm.status = AlarmStatus.RESOLVED
-        alarm.closed_at = now
-    else:
-        alarm.is_false = False if alarm.is_false is None else alarm.is_false
-        alarm.status = AlarmStatus.RESOLVED
-        alarm.closed_at = now
-
+    _apply_action(alarm, data.action, datetime.now(UTC))
     db.add(
         AlarmAcknowledgement(
             alarm_id=alarm.id,
@@ -98,5 +102,28 @@ def acknowledge(
             comment=data.comment,
         )
     )
+    db.flush()
+    if alarm.status == AlarmStatus.RESOLVED:
+        _reset_facility(db, facility, user, method)
     db.commit()
     return alarm
+
+
+def _apply_action(alarm: Alarm, action: AckAction, now: datetime) -> None:
+    """Змінює стан тривоги відповідно до дії користувача."""
+    if action == AckAction.ACKNOWLEDGE:
+        alarm.status = AlarmStatus.ACKNOWLEDGED
+        return
+    # Позначка «хибна» потрібна для статистики FAR; resolve — справжня тривога.
+    alarm.is_false = action == AckAction.MARK_FALSE
+    alarm.status = AlarmStatus.RESOLVED
+    alarm.closed_at = now
+
+
+def _reset_facility(
+    db: Session, facility: Facility, user: User, method: AuthMethod
+) -> None:
+    """Після закриття останньої тривоги повертає об'єкт у стан «знято»."""
+    if facility.mode not in ALARM_MODES or get_open_alarm(db, facility.id):
+        return
+    transition(db, facility, ModeTrigger.DISARM, ActionSource.API, user.id, method)

@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import AwareDatetime, BaseModel, Field, field_validator
 
@@ -117,12 +117,21 @@ class DeviceEventBatch(BaseModel):
     events: list[DeviceEventIn] = Field(min_length=1, max_length=200)
 
 
+class DeviceEventResult(BaseModel):
+    """Результат обробки однієї події пакета."""
+
+    seq: int
+    channel: int
+    status: Literal["accepted", "duplicate"]
+
+
 class DeviceEventsResult(BaseModel):
     """Результат приймання пакета."""
 
     accepted: int = Field(description="Нових подій записано в архів")
     duplicates: int = Field(description="Повторних подій відкинуто")
     last_seq: int
+    results: list[DeviceEventResult] = Field(default_factory=list)
 
 
 class HeartbeatIn(BaseModel):

@@ -134,6 +134,18 @@ MESSAGES: dict[str, dict[Locale, str]] = {
         Locale.UK: "Пристрій не автентифіковано",
         Locale.EN: "Device is not authenticated",
     },
+    "certificate_invalid": {
+        Locale.UK: "Сертифікат пристрою відкликано або строк його дії минув",
+        Locale.EN: "The device certificate is revoked or expired",
+    },
+    "certificate_not_active": {
+        Locale.UK: "Сертифікат уже не є чинним",
+        Locale.EN: "The certificate is no longer active",
+    },
+    "ca_not_initialized": {
+        Locale.UK: "Центр сертифікації не ініціалізовано (scripts/init_ca.py)",
+        Locale.EN: "The certificate authority is not initialized (scripts/init_ca.py)",
+    },
     "alarm_closed": {
         Locale.UK: "Тривогу вже закрито",
         Locale.EN: "The alarm is already closed",

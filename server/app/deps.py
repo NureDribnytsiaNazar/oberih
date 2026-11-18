@@ -1,5 +1,6 @@
 """Залежності FastAPI: сесія БД, поточний користувач, вузол, пагінація."""
 
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import Depends
@@ -18,6 +19,7 @@ from app.models.enums import NodeStatus
 from app.models.users import User
 from app.pagination import PageParams
 from app.security import decode_access_token, hash_token
+from app.services.certificates import node_certificate_valid
 
 DbSession = Annotated[Session, Depends(get_db)]
 Paging = Annotated[PageParams, Depends()]
@@ -66,6 +68,8 @@ def get_device_node(
     node = db.scalar(select(Node).where(Node.device_token_hash == hash_token(token)))
     if node is None or node.status == NodeStatus.DISABLED:
         raise UnauthorizedError("device_unauthorized")
+    if not node_certificate_valid(db, node.id, datetime.now(UTC)):
+        raise UnauthorizedError("certificate_invalid")
     return node
 
 

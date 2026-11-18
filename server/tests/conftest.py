@@ -13,6 +13,8 @@ from typing import Any
 
 # Секрет JWT потрібен до імпорту застосунку; у тестах достатньо випадкового.
 os.environ.setdefault("JWT_SECRET", secrets.token_urlsafe(48))
+# Фоновий виконавець у тестах вимкнено: таймери викликаються явно з now.
+os.environ["WORKER_ENABLED"] = "false"
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402

@@ -7,23 +7,22 @@ from sqlalchemy.orm import Session
 
 from app.errors import ConflictError
 from app.models.enums import FacilityMode
-from app.schemas.events import ArmMode
-from app.services.arming import arm_target
+from app.services.state_machine import ModeTrigger, next_mode
 from tests.conftest import API, confirmation
 
 
 @pytest.mark.parametrize(
-    ("mode", "exit_delay", "expected"),
+    ("trigger", "delay", "expected"),
     [
-        (ArmMode.AWAY, 30, FacilityMode.EXIT_DELAY),
-        (ArmMode.AWAY, 0, FacilityMode.ARMED_AWAY),
-        (ArmMode.HOME, 30, FacilityMode.ARMED_HOME),
+        (ModeTrigger.ARM_AWAY, 30, FacilityMode.EXIT_DELAY),
+        (ModeTrigger.ARM_AWAY, 0, FacilityMode.ARMED_AWAY),
+        (ModeTrigger.ARM_HOME, 30, FacilityMode.ARMED_HOME),
     ],
 )
-def test_arm_target_from_disarmed(
-    mode: ArmMode, exit_delay: int, expected: FacilityMode
+def test_arm_from_disarmed(
+    trigger: ModeTrigger, delay: int, expected: FacilityMode
 ) -> None:
-    assert arm_target(FacilityMode.DISARMED, mode, exit_delay) == expected
+    assert next_mode(FacilityMode.DISARMED, trigger, delay) == expected
 
 
 @pytest.mark.parametrize(
@@ -31,7 +30,7 @@ def test_arm_target_from_disarmed(
 )
 def test_cannot_arm_when_not_disarmed(current: FacilityMode) -> None:
     with pytest.raises(ConflictError):
-        arm_target(current, ArmMode.AWAY, 30)
+        next_mode(current, ModeTrigger.ARM_AWAY, 30)
 
 
 def test_arm_disarm_cycle_is_logged(

@@ -19,6 +19,10 @@ def _event(channel: int, event_type: str, seq: int) -> dict[str, Any]:
     }
 
 
+def _summary(body: dict[str, Any]) -> tuple[int, int, int]:
+    return body["accepted"], body["duplicates"], body["last_seq"]
+
+
 def test_device_requires_valid_token(
     client: TestClient, device: dict[str, Any]
 ) -> None:
@@ -34,12 +38,14 @@ def test_duplicates_are_ignored(
 ) -> None:
     batch = {"events": [_event(1, "opened", 1), _event(2, "motion", 2)]}
     first = client.post(f"{API}/device/events", json=batch, headers=device["headers"])
-    assert first.json() == {"accepted": 2, "duplicates": 0, "last_seq": 2}
+    assert _summary(first.json()) == (2, 0, 2)
 
     # Повторне надсилання буфера після відновлення зв'язку.
     resend = {"events": [*batch["events"], _event(1, "closed", 3)]}
     second = client.post(f"{API}/device/events", json=resend, headers=device["headers"])
-    assert second.json() == {"accepted": 1, "duplicates": 2, "last_seq": 3}
+    assert _summary(second.json()) == (1, 2, 3)
+    statuses = [item["status"] for item in second.json()["results"]]
+    assert statuses == ["duplicate", "duplicate", "accepted"]
 
     events = client.get(f"{API}/facilities/{facility_id}/events", headers=owner)
     assert events.json()["total"] == 3
@@ -151,7 +157,7 @@ def test_tamper_raises_confirmed_alarm_and_ack_flow(
     closed = client.post(ack_url, json=body, headers=owner)
     assert closed.json()["error"]["code"] == "alarm_closed"
 
-    disarmed = client.post(
-        f"{base}/disarm", json={"confirmation": confirmation()}, headers=owner
-    )
-    assert disarmed.json()["mode"] == "disarmed"
+    # Закриття останньої тривоги знімає об'єкт з охорони.
+    assert client.get(base, headers=owner).json()["mode"] == "disarmed"
+    log = client.get(f"{base}/arming-log", headers=owner).json()["items"]
+    assert (log[0]["to_mode"], log[0]["auth_method"]) == ("disarmed", "password")

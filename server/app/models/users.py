@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, enum_column
-from app.models.enums import Locale, MeasurementSystem, PushPlatform
+from app.models.enums import Locale, MeasurementSystem, PushPlatform, TimeFormat
 
 
 class TariffPlan(UUIDPrimaryKeyMixin, Base):
@@ -54,6 +54,9 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     measurement_system: Mapped[MeasurementSystem] = mapped_column(
         enum_column(MeasurementSystem), default=MeasurementSystem.METRIC
     )
+    time_format: Mapped[TimeFormat] = mapped_column(
+        enum_column(TimeFormat), default=TimeFormat.H24, server_default="24h"
+    )
     totp_secret: Mapped[str | None] = mapped_column(String(64))
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -62,6 +65,8 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("tariff_plans.id", ondelete="RESTRICT")
     )
     privacy_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Заблокований адміністратором користувач не може увійти.
+    blocked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Заповнюється під час видалення даних (GDPR): запис знеособлюється,
     # а не видаляється, щоб не порушувати цілісність журналів.
     anonymized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

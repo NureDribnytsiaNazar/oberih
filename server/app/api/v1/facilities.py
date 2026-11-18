@@ -20,7 +20,7 @@ from app.schemas.facilities import (
 from app.services import facilities as facility_service
 from app.services import members as member_service
 from app.services.access import Permission, require_access
-from app.services.arming import finish_exit_delay
+from app.services.arming import refresh_mode
 
 router = APIRouter(prefix="/facilities", tags=["facilities"])
 
@@ -41,7 +41,7 @@ def create_facility(data: FacilityCreate, user: CurrentUser, db: DbSession) -> o
 def get_facility(facility_id: uuid.UUID, user: CurrentUser, db: DbSession) -> object:
     """Об'єкт і його поточний режим охорони."""
     facility, _ = require_access(db, facility_id, user, Permission.VIEW_FACILITY)
-    finish_exit_delay(db, facility)
+    refresh_mode(db, facility)
     return facility
 
 

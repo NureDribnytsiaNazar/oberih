@@ -1,5 +1,7 @@
 """Налаштування серверної частини, що зчитуються зі змінних середовища."""
 
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -24,6 +26,16 @@ class Settings(BaseSettings):
     refresh_token_days: int = 30
     # Назва сервісу в застосунках-автентифікаторах (TOTP).
     totp_issuer: str = "Oberih"
+
+    # Фоновий виконавець таймерів (у тестах вимикається WORKER_ENABLED=false).
+    worker_enabled: bool = True
+    worker_interval_s: int = Field(default=5, ge=1)
+    # Як часто виконувати очищення застарілих даних за тарифом.
+    purge_interval_h: int = Field(default=24, ge=1)
+
+    # Каталоги резервних копій і центру сертифікації (не в репозиторії).
+    backup_dir: Path = Path("backups")
+    ca_dir: Path = Path("ca")
 
 
 settings = Settings()

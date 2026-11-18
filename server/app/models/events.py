@@ -49,8 +49,9 @@ class Event(Base):
             "event_type",
             "seq",
             name="uq_events_dedup_key",
-            postgresql_nulls_not_distinct=True,
         ),
+        # Пошук попередніх подій датчика у вікні Δ(дубл.) і Δ(підтв.).
+        Index("ix_events_dedup_window", "sensor_id", "event_type", "occurred_at"),
         Index("ix_events_facility_occurred", "facility_id", "occurred_at"),
         Index("ix_events_sensor_occurred", "sensor_id", "occurred_at"),
     )
@@ -236,6 +237,10 @@ class ScenarioRun(UUIDPrimaryKeyMixin, Base):
     )
     passed: Mapped[bool] = mapped_column(Boolean)
     actual: Mapped[list[dict[str, Any]]] = mapped_column(JSONB)
+    # Розбіжності між очікуваними й отриманими тривогами.
+    mismatches: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, default=list, server_default="[]"
+    )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
