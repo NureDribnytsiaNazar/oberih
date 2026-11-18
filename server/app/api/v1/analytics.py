@@ -83,10 +83,12 @@ def false_alarms(
 
 
 @router.get("/scenarios", response_model=list[ScenarioOut])
-def list_scenarios(facility_id: uuid.UUID, user: CurrentUser, db: DbSession) -> object:
+def list_scenarios(
+    facility_id: uuid.UUID, user: CurrentUser, db: DbSession, locale: UserLocale
+) -> object:
     """Тестові сценарії об'єкта (власник, монтажник)."""
     facility, _ = require_access(db, facility_id, user, Permission.MANAGE_ZONES)
-    return scenario_service.list_scenarios(db, facility)
+    return scenario_service.list_scenarios(db, facility, locale)
 
 
 @router.post(

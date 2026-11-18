@@ -4,8 +4,9 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.errors import BadRequestError, ForbiddenError
+from app.l10n import collated
 from app.models.devices import Node
-from app.models.enums import FacilityRole
+from app.models.enums import FacilityRole, Locale
 from app.models.facilities import Facility, FacilityMember, FacilitySettings
 from app.models.users import User
 from app.pagination import PageParams, paginate
@@ -20,14 +21,14 @@ from app.services.users import validate_timezone
 
 
 def list_for_user(
-    db: Session, user: User, params: PageParams
+    db: Session, user: User, params: PageParams, locale: Locale
 ) -> tuple[list[Facility], int]:
-    """Об'єкти, учасником яких є користувач (власні та спільні)."""
+    """Об'єкти, учасником яких є користувач, за абеткою його мови."""
     stmt = (
         select(Facility)
         .join(FacilityMember, FacilityMember.facility_id == Facility.id)
         .where(FacilityMember.user_id == user.id)
-        .order_by(Facility.created_at, Facility.id)
+        .order_by(collated(Facility.name, locale), Facility.id)
     )
     return paginate(db, stmt, params)
 

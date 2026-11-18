@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, status
 
-from app.deps import CurrentUser, DbSession
+from app.deps import CurrentUser, DbSession, UserLocale
 from app.schemas.facilities import (
     NodeCommissionOut,
     NodeCreate,
@@ -26,10 +26,12 @@ router = APIRouter(prefix="/facilities/{facility_id}", tags=["equipment"])
 
 
 @router.get("/zones", response_model=list[ZoneOut])
-def list_zones(facility_id: uuid.UUID, user: CurrentUser, db: DbSession) -> object:
-    """Зони об'єкта."""
+def list_zones(
+    facility_id: uuid.UUID, user: CurrentUser, db: DbSession, locale: UserLocale
+) -> object:
+    """Зони об'єкта за абеткою мови користувача."""
     facility, _ = require_access(db, facility_id, user, Permission.VIEW_FACILITY)
-    return service.list_zones(db, facility)
+    return service.list_zones(db, facility, locale)
 
 
 @router.post("/zones", response_model=ZoneOut, status_code=status.HTTP_201_CREATED)

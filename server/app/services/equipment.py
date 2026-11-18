@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.errors import BadRequestError, NotFoundError
 from app.models.devices import Node, Sensor
-from app.models.enums import NodeStatus
+from app.l10n import collated
+from app.models.enums import Locale, NodeStatus
 from app.models.facilities import Facility, Zone
 from app.models.users import User
 from app.schemas.facilities import (
@@ -27,9 +28,13 @@ from app.services.common import apply_changes, commit_or_conflict, get_in_facili
 # --- Зони --------------------------------------------------------------------
 
 
-def list_zones(db: Session, facility: Facility) -> list[Zone]:
-    """Усі зони об'єкта за назвою."""
-    stmt = select(Zone).where(Zone.facility_id == facility.id).order_by(Zone.name)
+def list_zones(db: Session, facility: Facility, locale: Locale) -> list[Zone]:
+    """Усі зони об'єкта за назвою (за правилами сортування мови)."""
+    stmt = (
+        select(Zone)
+        .where(Zone.facility_id == facility.id)
+        .order_by(collated(Zone.name, locale))
+    )
     return list(db.scalars(stmt))
 
 

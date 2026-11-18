@@ -7,7 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.errors import BadRequestError
+from app.l10n import collated
 from app.models.devices import Node, Sensor
+from app.models.enums import Locale
 from app.models.events import ScenarioRun, TestScenario
 from app.models.facilities import Facility, Zone
 from app.models.users import User
@@ -23,13 +25,15 @@ from app.services.pipeline.core import RuleSettings, SensorRef
 from app.services.pipeline.simulator import ScenarioStep, compare, replay
 
 
-def list_scenarios(db: Session, facility: Facility) -> list[TestScenario]:
-    """Сценарії об'єкта за назвою."""
+def list_scenarios(
+    db: Session, facility: Facility, locale: Locale
+) -> list[TestScenario]:
+    """Сценарії об'єкта за назвою (за правилами сортування мови)."""
     return list(
         db.scalars(
             select(TestScenario)
             .where(TestScenario.facility_id == facility.id)
-            .order_by(TestScenario.name)
+            .order_by(collated(TestScenario.name, locale))
         )
     )
 

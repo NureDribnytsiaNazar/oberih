@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import Locale, MeasurementSystem
+from app.models.enums import Locale, MeasurementSystem, TimeFormat
 from app.schemas.common import Name, ORMModel
 
 
@@ -36,6 +36,7 @@ class UserOut(ORMModel):
     locale: Locale
     timezone: str
     measurement_system: MeasurementSystem
+    time_format: TimeFormat
     totp_enabled: bool
     is_platform_admin: bool
     tariff_plan: TariffOut
@@ -50,6 +51,7 @@ class UserUpdate(BaseModel):
     locale: Locale | None = None
     timezone: Annotated[str, Field(max_length=64)] | None = None
     measurement_system: MeasurementSystem | None = None
+    time_format: TimeFormat | None = None
 
 
 class DeleteAccountRequest(BaseModel):

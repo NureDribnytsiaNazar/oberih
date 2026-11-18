@@ -17,6 +17,7 @@ from app.api.v1 import (
     equipment,
     events,
     facilities,
+    meta,
     schedules,
     transfer,
     users,
@@ -70,6 +71,7 @@ for module in (
     admin,
     admin_data,
     admin_certificates,
+    meta,
 ):
     api.include_router(module.router)
 

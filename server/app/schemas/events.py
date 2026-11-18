@@ -151,8 +151,16 @@ class HeartbeatOut(BaseModel):
 # --- Архів подій і тривоги ---------------------------------------------------
 
 
+class Measurement(BaseModel):
+    """Фізична величина з корисного навантаження події в одиницях користувача."""
+
+    name: str
+    value: Decimal
+    unit: str
+
+
 class EventOut(ORMModel):
-    """Подія з архіву."""
+    """Подія з архіву: час в UTC і місцевий час користувача."""
 
     id: int
     node_id: uuid.UUID
@@ -162,6 +170,9 @@ class EventOut(ORMModel):
     occurred_at: datetime
     received_at: datetime
     payload: dict[str, Any] | None
+    time_local: datetime | None = None
+    time_local_text: str | None = None
+    measurements: list[Measurement] = []
 
 
 class AlarmOut(ORMModel):
@@ -176,6 +187,8 @@ class AlarmOut(ORMModel):
     is_false: bool | None
     opened_at: datetime
     closed_at: datetime | None
+    opened_at_local: datetime | None = None
+    opened_at_text: str | None = None
 
 
 class AcknowledgeRequest(BaseModel):

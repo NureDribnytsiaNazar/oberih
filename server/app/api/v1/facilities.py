@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, status
 
-from app.deps import CurrentUser, DbSession, Paging
+from app.deps import CurrentUser, DbSession, Paging, UserLocale
 from app.pagination import page_response
 from app.schemas.common import Page
 from app.schemas.facilities import (
@@ -26,9 +26,12 @@ router = APIRouter(prefix="/facilities", tags=["facilities"])
 
 
 @router.get("", response_model=Page[FacilityOut])
-def list_facilities(user: CurrentUser, db: DbSession, paging: Paging) -> object:
-    """Об'єкти, до яких користувач має доступ."""
-    return page_response(facility_service.list_for_user(db, user, paging), paging)
+def list_facilities(
+    user: CurrentUser, db: DbSession, paging: Paging, locale: UserLocale
+) -> object:
+    """Об'єкти, до яких користувач має доступ (за абеткою його мови)."""
+    page = facility_service.list_for_user(db, user, paging, locale)
+    return page_response(page, paging)
 
 
 @router.post("", response_model=FacilityOut, status_code=status.HTTP_201_CREATED)

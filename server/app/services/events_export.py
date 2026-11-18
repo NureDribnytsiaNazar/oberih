@@ -17,13 +17,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.i18n import translate
+from app.l10n import BABEL_LOCALES
 from app.models.devices import Sensor
 from app.models.enums import Locale
 from app.models.events import Event
 from app.models.facilities import Facility, Zone
 
 DELIMITERS = {Locale.UK: ";", Locale.EN: ","}
-BABEL_LOCALES = {Locale.UK: "uk_UA", Locale.EN: "en_US"}
 COLUMNS = (
     "csv.id",
     "csv.time_utc",
