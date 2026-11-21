@@ -66,8 +66,11 @@ services:
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
+    environment:
+      # Зовнішній порт HTTPS для редиректу з HTTP.
+      HTTPS_PORT: ${HTTPS_PORT:-443}
     volumes:
-      - ./deploy/nginx/oberih.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/oberih.conf:/etc/nginx/templates/default.conf.template:ro
       - ./deploy/certs:/etc/nginx/certs:ro
     depends_on:
       api:
