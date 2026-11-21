@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "author": "Dribnytsia Nazar",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-slide-switch", "id": "door", "top": -120, "left": -220, "attrs": {} },
+    { "type": "wokwi-slide-switch", "id": "window", "top": -120, "left": -140, "attrs": {} },
+    { "type": "wokwi-slide-switch", "id": "tamper", "top": -120, "left": -60, "attrs": {} },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir", "top": -150, "left": 40, "attrs": {} },
+    { "type": "wokwi-rgb-led", "id": "led", "top": -120, "left": 200, "attrs": { "common": "cathode" } },
+    { "type": "wokwi-buzzer", "id": "buzzer", "top": -140, "left": 280, "attrs": { "volume": "0.2" } },
+    { "type": "wokwi-text", "id": "label-door", "top": -150, "left": -230, "attrs": { "text": "1 Door" } },
+    { "type": "wokwi-text", "id": "label-window", "top": -150, "left": -155, "attrs": { "text": "2 Window" } },
+    { "type": "wokwi-text", "id": "label-tamper", "top": -150, "left": -70, "attrs": { "text": "4 Tamper" } },
+    { "type": "wokwi-text", "id": "label-pir", "top": -180, "left": 50, "attrs": { "text": "3 PIR" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "door:2", "esp:13", "green", [] ],
+    [ "door:1", "esp:GND.1", "black", [] ],
+    [ "window:2", "esp:14", "green", [] ],
+    [ "window:1", "esp:GND.1", "black", [] ],
+    [ "tamper:2", "esp:26", "orange", [] ],
+    [ "tamper:1", "esp:GND.1", "black", [] ],
+    [ "pir:VCC", "esp:3V3", "red", [] ],
+    [ "pir:OUT", "esp:27", "violet", [] ],
+    [ "pir:GND", "esp:GND.2", "black", [] ],
+    [ "led:R", "esp:25", "red", [] ],
+    [ "led:G", "esp:33", "green", [] ],
+    [ "led:B", "esp:32", "blue", [] ],
+    [ "led:COM", "esp:GND.2", "black", [] ],
+    [ "buzzer:2", "esp:23", "gold", [] ],
+    [ "buzzer:1", "esp:GND.2", "black", [] ]
+  ],
+  "dependencies": {}
+}

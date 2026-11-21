@@ -1,0 +1,7 @@
+# Симуляція у Wokwi for VS Code: прошивка з `pio run -e esp32dev`.
+# Для режиму розробки без кореневого сертифіката замініть esp32dev на
+# esp32dev_devtls в обох шляхах.
+[wokwi]
+version = 1
+firmware = '.pio/build/esp32dev/firmware.bin'
+elf = '.pio/build/esp32dev/firmware.elf'
