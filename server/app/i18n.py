@@ -237,6 +237,10 @@ MESSAGES: dict[str, dict[Locale, str]] = {
         Locale.EN: "Motion without a perimeter opening: possibly a false motion "
         "detection or someone was already inside.",
     },
+    "service_unavailable": {
+        Locale.UK: "Сервіс тимчасово недоступний (немає зв'язку з БД)",
+        Locale.EN: "Service temporarily unavailable (database is unreachable)",
+    },
     "llm_unavailable": {
         Locale.UK: "Зовнішня мовна модель недоступна",
         Locale.EN: "The external language model is unavailable",

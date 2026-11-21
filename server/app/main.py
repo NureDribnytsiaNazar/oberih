@@ -5,6 +5,8 @@ import contextlib
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, FastAPI
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.v1 import (
     admin,
@@ -23,7 +25,8 @@ from app.api.v1 import (
     users,
 )
 from app.config import settings
-from app.errors import register_error_handlers
+from app.deps import DbSession
+from app.errors import AppError, register_error_handlers
 from app.responses import UTF8JSONResponse
 from app.worker import run_worker
 
@@ -52,7 +55,7 @@ app = FastAPI(
         "UTC у форматі ISO 8601. Мова повідомлень про помилки обирається за "
         "заголовком Accept-Language (uk, en)."
     ),
-    version="0.3.0",
+    version="0.5.0",
     lifespan=lifespan,
     default_response_class=UTF8JSONResponse,
 )
@@ -79,9 +82,13 @@ for module in (
 
 
 @api.get("/health", tags=["service"])
-def health() -> dict[str, str]:
-    """Повертає стан сервісу для перевірки доступності."""
-    return {"status": "ok"}
+def health(db: DbSession) -> dict[str, str]:
+    """Стан сервісу й підключення до БД (HEALTHCHECK контейнера, smoke-тест)."""
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError as exc:
+        raise AppError(503, "service_unavailable") from exc
+    return {"status": "ok", "database": "ok"}
 
 
 app.include_router(api)

@@ -9,20 +9,40 @@ import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
 from app.config import settings
 from app.db import SessionLocal
 from app.services.retention import purge_expired_data
 from app.services.timers import process_timers
 
 logger = logging.getLogger("oberih.worker")
+# Ключ рекомендаційного блокування PostgreSQL для проходу таймерів.
+TIMERS_LOCK_KEY = 0x0BE21C
 
 
-def run_once(now: datetime, purge: bool) -> None:
-    """Один прохід: таймери та, за потреби, очищення даних."""
-    with SessionLocal() as db:
+def run_once(db: Session, now: datetime, purge: bool) -> bool:
+    """Один прохід: таймери та, за потреби, очищення даних.
+
+    Таймери виконуються під pg_try_advisory_xact_lock: якщо запущено кілька
+    екземплярів api, прохід виконає лише один (блокування знімається під час
+    фіксації транзакції в process_timers). Повертає False, якщо прохід
+    таймерів пропущено, бо блокування тримає інший екземпляр.
+    """
+    locked = db.scalar(select(func.pg_try_advisory_xact_lock(TIMERS_LOCK_KEY)))
+    if locked:
         process_timers(db, now)
-        if purge:
-            purge_expired_data(db, now)
+    else:
+        db.rollback()
+    if purge:
+        purge_expired_data(db, now)
+    return bool(locked)
+
+
+def _run_once_in_session(now: datetime, purge: bool) -> None:
+    with SessionLocal() as db:
+        run_once(db, now, purge)
 
 
 async def run_worker(stop: asyncio.Event) -> None:
@@ -36,7 +56,7 @@ async def run_worker(stop: asyncio.Event) -> None:
         now = datetime.now(UTC)
         purge = last_purge is None or now - last_purge >= purge_every
         try:
-            await asyncio.to_thread(run_once, now, purge)
+            await asyncio.to_thread(_run_once_in_session, now, purge)
             if purge:
                 last_purge = now
         except Exception:  # межа фонового циклу: помилку лише журналюємо

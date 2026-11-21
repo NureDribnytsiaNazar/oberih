@@ -2,17 +2,21 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
+from datetime import UTC, datetime
+
+from sqlalchemy import func, select, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from app.i18n import parse_accept_language
 from app.models.enums import Locale
+from app.worker import TIMERS_LOCK_KEY, run_once
 from tests.conftest import API, new_user
 
 
 def test_health(client: TestClient) -> None:
     response = client.get(f"{API}/health")
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "database": "ok"}
     # Явне кодування: клієнти без нього можуть зіпсувати кирилицю.
     assert response.headers["content-type"] == "application/json; charset=utf-8"
     error = client.get(f"{API}/nope")
@@ -68,3 +72,16 @@ def test_pagination_limits(client: TestClient) -> None:
 )
 def test_accept_language(header: str | None, expected: Locale) -> None:
     assert parse_accept_language(header) == expected
+
+
+def test_timer_pass_skipped_when_another_instance_holds_lock(
+    db: Session, engine: Engine
+) -> None:
+    """Кілька екземплярів api: таймери виконує лише власник блокування."""
+    now = datetime.now(UTC)
+    with engine.connect() as other:
+        other.execute(select(func.pg_advisory_lock(TIMERS_LOCK_KEY)))
+        assert run_once(db, now, purge=False) is False
+        other.execute(select(func.pg_advisory_unlock(TIMERS_LOCK_KEY)))
+        other.commit()
+    assert run_once(db, now, purge=False) is True
