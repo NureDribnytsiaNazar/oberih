@@ -1,0 +1,48 @@
+@startuml iot-use-case
+' Діаграма прецедентів IoT-клієнта «Оберіг» (ЛБ4, ІК-1…ІК-8 Vision & Scope).
+' Модулі прошивки: iot/src/*.{h,cpp}.
+!pragma layout smetana
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+title Діаграма прецедентів IoT-вузла «Оберіг» (ESP32)
+
+actor "Власник" as Owner
+actor "Монтажник" as Installer
+actor "Датчики\n(геркони, PIR, тампер)" as Sensors <<device>>
+actor "Сервер «Оберіг»" as Server <<system>>
+
+rectangle "IoT-вузол (ESP32, прошивка iot/)" {
+  usecase "ІК-1 Вести локальний автомат\nрежимів (працює без зв'язку)" as UC_Mode
+  usecase "ІК-2 Фільтрувати брязкіт\nгеркона (debounce_ms)" as UC_Debounce
+  usecase "ІК-3 Блокувати повторні\nспрацювання PIR (pir_lockout_s)" as UC_Lockout
+  usecase "ІК-4 Зберігати події в буфері NVS\nз наскрізним seq" as UC_Buffer
+  usecase "ІК-5 Передавати події й heartbeat\nчерез HTTPS із повторами" as UC_Send
+  usecase "ІК-6 Індикувати режим\nі втрату зв'язку (LED, зумер)" as UC_Indicate
+  usecase "ІК-7 Виконувати підписані команди\n(arm, disarm, set_config)" as UC_Command
+  usecase "Перевірити підпис HMAC,\nмітку часу й nonce" as UC_Verify
+  usecase "ІК-8 Змінити налаштування\nз консолі Serial (заміна BLE)" as UC_Console
+  usecase "ІК-8 Застосувати конфігурацію\nсервера (config_version)" as UC_Config
+  usecase "Синхронізувати час\n(server_epoch)" as UC_Clock
+  usecase "Симулювати брязкіт і\nпідроблену команду (sim)" as UC_Sim
+}
+
+Sensors --> UC_Debounce
+Sensors --> UC_Lockout
+UC_Debounce ..> UC_Mode : <<include>>
+UC_Lockout ..> UC_Mode : <<include>>
+UC_Mode ..> UC_Buffer : <<include>>
+UC_Buffer ..> UC_Send : <<include>>
+UC_Mode ..> UC_Indicate : <<include>>
+UC_Send --> Server
+Server --> UC_Clock
+Server --> UC_Command
+Server --> UC_Config
+UC_Command ..> UC_Verify : <<include>>
+Owner --> UC_Indicate
+Installer --> UC_Console
+Installer --> UC_Sim
+UC_Sim ..> UC_Verify : <<extend>>
+
+@enduml

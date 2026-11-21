@@ -89,8 +89,9 @@
 | GET | `/facilities/{id}/zones` | Зони | усі ролі |
 | POST, PATCH, DELETE | `/facilities/{id}/zones[/{zone_id}]` | Керування зонами | власник, монтажник |
 | GET | `/facilities/{id}/nodes[/{node_id}]` | Вузли та стан зв'язку | усі ролі |
-| POST, PATCH, DELETE | `/facilities/{id}/nodes[/{node_id}]` | Реєстрація, зміна, видалення вузла | власник, монтажник |
-| POST | `/facilities/{id}/nodes/{node_id}/commission` | Видача токена пристрою (один раз) | власник, монтажник |
+| POST, PATCH, DELETE | `/facilities/{id}/nodes[/{node_id}]` | Реєстрація, зміна (назва, `debounce_ms` 10–1000, `pir_lockout_s` 0–600), видалення вузла | власник, монтажник |
+| POST | `/facilities/{id}/nodes/{node_id}/commission` | Видача токена пристрою й ключа підпису команд (один раз) | власник, монтажник |
+| GET | `/facilities/{id}/nodes/{node_id}/commands` | Останні 50 команд вузла та стан доставки | власник, монтажник |
 | GET | `/facilities/{id}/nodes/{node_id}/sensors` | Датчики вузла | усі ролі |
 | POST, PATCH, DELETE | `/facilities/{id}/nodes/{node_id}/sensors[/{sensor_id}]` | Керування датчиками | власник, монтажник |
 
@@ -130,7 +131,53 @@ exit_delay | armed_* | entry_delay | alarm --disarm--> disarmed
 | Метод | Шлях | Призначення |
 |---|---|---|
 | POST | `/device/events` | Пакет до 200 подій `{channel, event_type, seq, occurred_at, payload}` |
-| POST | `/device/heartbeat` | Службове повідомлення; відповідь містить `server_time`, `poll_interval_s`, `facility_mode` |
+| POST | `/device/heartbeat` | Службове повідомлення; підтвердження команд; відповідь — час, режим, підписані команди, конфігурація вузла |
+
+#### Heartbeat і команди вузлу (ЛБ4, ІК-7, ІК-8)
+
+Усі нові поля необов'язкові: старий запит `{}` або `{"firmware_version": "…"}`
+обробляється як раніше, а старі поля відповіді не змінилися.
+
+```http
+POST /api/v1/device/heartbeat
+X-Device-Token: <token>
+
+{"firmware_version": "0.4.0", "mode": "disarmed", "config_version": 2,
+ "buffer_depth": 0, "acked_command_ids": ["4b0c…"]}
+```
+
+```json
+{"server_time": "2026-11-21T12:00:00Z", "poll_interval_s": 30,
+ "facility_mode": "armed_home", "server_epoch": 1795262400, "last_seq": 41,
+ "config": {"exit_delay_s": 30, "entry_delay_s": 30, "poll_interval_s": 30,
+            "debounce_ms": 80, "pir_lockout_s": 10, "config_version": 3},
+ "commands": [{"id": "9d2e…", "type": "arm_home",
+               "payload": "{\"mode\":\"armed_home\"}",
+               "nonce": 1795262399517, "issued_at": 1795262399,
+               "expires_at": 1795262459, "signature": "5f1a…"}]}
+```
+
+- **Черга команд.** Постановка й зняття (`/arm`, `/disarm`) ставлять усім
+  вузлам об'єкта команду `arm_away`, `arm_home` або `disarm` із
+  `payload = {"mode": <новий режим>}`. Зміна `debounce_ms`, `pir_lockout_s`
+  вузла або `exit_delay_s`, `entry_delay_s`, `poll_interval_s` об'єкта
+  збільшує `config_version` і ставить команду `set_config` із повною
+  конфігурацією.
+- **Підпис:** `HMAC-SHA256(command_key, "<node_id>|<nonce>|<type>|<payload>|<issued_at>")`
+  у hex. `payload` — рядок канонічного JSON (без пробілів, ключі за абеткою);
+  вузол перевіряє підпис саме над цим рядком. Час — секунди Unix.
+- **Доставка:** команда видається в кожній відповіді heartbeat, доки вузол не
+  передасть її `id` в `acked_command_ids`, але не довше за строк дії 60 с
+  (потім стан `expired`). Чужі `id` в підтвердженнях ігноруються.
+- **Одноразове число** строго зростає в межах вузла: більше з (останнє + 1)
+  і поточного часу в мілісекундах.
+- **Узгодження режиму.** Якщо вузол повідомляє `mode`, що не відповідає
+  режиму об'єкта (`exit_delay` і `armed_away` вважаються узгодженими), у
+  буфері вузла немає подій (`buffer_depth = 0`) і немає відкритої команди,
+  сервер ставить команду, що приводить вузол до свого режиму. Затримку входу
+  й тривогу сервер не нав'язує — їх вузол формує сам за датчиками.
+- **`last_seq`** — найбільший порядковий номер подій вузла в архіві; вузол із
+  очищеною NVS продовжує нумерацію після нього.
 
 Конвеєр обробки (`app/services/pipeline/`): подія — дублікат, якщо в архіві є
 та сама подія датчика з тим самим `seq` або з різницею в часі менше за

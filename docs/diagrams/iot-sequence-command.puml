@@ -1,0 +1,50 @@
+@startuml iot-sequence-command
+' Діаграма взаємодії: команда зняття з охорони від користувача до вузла.
+' Код: server/app/services/arming.py (disarm), commands.py (enqueue_mode,
+' deliver, acknowledge), device.py (heartbeat); iot/src/node_app.cpp
+' (service_heartbeat, process_command), command_verifier.cpp (verify).
+skinparam shadowing false
+skinparam defaultFontName Arial
+title Підписана команда сервера -> IoT-вузол (ІК-7)
+
+actor "Власник" as User
+participant "REST API\n/facilities/{id}/disarm" as Api
+participant "arming.disarm()" as Arming
+participant "commands" as Commands
+database "PostgreSQL\nnode_commands" as Db
+participant "/device/heartbeat\ndevice.heartbeat()" as Heartbeat
+participant "IoT-вузол\nNodeApp" as Node
+participant "CommandVerifier" as Verifier
+
+User -> Api : POST disarm (пароль / TOTP)
+Api -> Arming : перевірка прав і повторне підтвердження
+Arming -> Arming : transition(DISARM), arming_log
+Arming -> Commands : enqueue_mode(facility)
+Commands -> Db : INSERT disarm, payload {"mode":"disarmed"},\nnonce = max(last+1, now_ms), expires_at = +60 c
+Api --> User : 200 {mode: disarmed}
+
+... до 30 с (poll_interval_s) ...
+
+Node -> Heartbeat : POST {mode, config_version,\nbuffer_depth, acked_command_ids: []}
+Heartbeat -> Commands : acknowledge(); reconcile_mode()
+Heartbeat -> Commands : deliver(): прострочені -> expired
+Commands -> Db : status = delivered, delivered_at
+Commands --> Heartbeat : команди з підписом\nHMAC-SHA256(command_key, "node|nonce|type|payload|issued_at")
+Heartbeat --> Node : {server_epoch, facility_mode, config, commands[]}
+Node -> Node : NodeClock::sync(server_epoch)
+Node -> Verifier : verify(command, clock, last_nonce)
+alt підпис, час і nonce правильні
+  Verifier --> Node : accepted
+  Node -> Node : ModeMachine::force(disarmed);\nlast_nonce -> NVS
+else підробка, прострочення або повтор
+  Verifier --> Node : bad_signature / expired / replay
+  Node -> Node : журнал, режим не змінюється
+end
+
+... наступний heartbeat ...
+
+Node -> Heartbeat : POST {acked_command_ids: [id]}
+Heartbeat -> Commands : acknowledge()
+Commands -> Db : status = acked, acked_at
+Heartbeat --> Node : commands: [] (команда більше не видається)
+@enduml

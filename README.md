@@ -11,9 +11,11 @@
 | `server/` | Серверна частина: REST API, бізнес-логіка, адміністрування |
 | `server/app/` | Код застосунку: маршрути, сервіси, моделі, схеми |
 | `server/alembic/` | Міграції бази даних |
-| `server/scripts/` | Початкові дані, експорт OpenAPI, генерація діаграми БД |
+| `server/scripts/` | Початкові дані, секрети вузла (`provision_node`), експорт OpenAPI, діаграма БД |
 | `server/tests/` | Автоматичні тести (pytest) |
 | `iot/` | Програма IoT-вузла на ESP32 (C++, PlatformIO, симуляція Wokwi) |
+| `iot/src/` | Модулі вузла: фільтри, автомат режимів, буфер, повтори, команди, налаштування |
+| `iot/test/` | Юніт-тести чистої логіки вузла (Unity, `pio test -e native`) |
 | `docs/` | Специфікація API, схема БД, діаграми, прийняті рішення |
 | `docker-compose.yml` | Локальне середовище (PostgreSQL 16) |
 
@@ -72,6 +74,51 @@ uvicorn app.main:app --reload
 - документація API (Swagger UI): <http://localhost:8000/docs>;
 - перевірка стану: <http://localhost:8000/api/v1/health>.
 
+## IoT-вузол (ESP32, Wokwi)
+
+Прошивка в `iot/` (PlatformIO, плата `esp32dev`, фреймворк Arduino). Логіку
+(фільтр брязкоту, блокування PIR, автомат режимів, буфер подій, повтори,
+перевірку команд, налаштування, формат JSON) написано без Arduino API, тому
+її юніт-тести виконуються на ПК.
+
+Потрібно: [PlatformIO Core](https://platformio.org/install/cli) (`pio`),
+для тестів на ПК — компілятор GCC (MinGW-w64, наприклад
+`winget install BrechtSanders.WinLibs.POSIX.UCRT`), для симуляції —
+розширення **Wokwi for VS Code** з ліцензією (F1 → *Wokwi: Request a new
+License*).
+
+```powershell
+# 1. Секрети вузла: новий токен і ключ підпису команд демо-вузла, адреса
+#    сервера та кореневий сертифікат -> iot/include/secrets.h (не комітиться).
+#    Wokwi бачить лише публічні адреси, тому сервер має бути за тунелем (ЛБ5).
+cd server
+python -m scripts.provision_node --server-url https://<адреса-тунелю>
+cd ..\iot
+
+# 2. Юніт-тести логіки на ПК
+pio test -e native
+
+# 3. Збирання прошивки для симуляції
+pio run -e esp32dev
+```
+
+Далі у VS Code відкрийте `iot/diagram.json` і запустіть F1 → *Wokwi: Start
+Simulator*. Перемикачі `1 Door`, `2 Window`, `4 Tamper` — контакти дверей,
+вікна й корпусу, датчик `3 PIR` — рух. RGB-світлодіод показує режим
+(зелений — знято, жовтий — «Вдома», червоний — охорона, мигання — затримки й
+тривога, синій спалах — немає зв'язку), зумер — тривогу й втрату зв'язку.
+
+Налаштування вузла (ІК-8) змінюються в консолі Serial Monitor (BLE у Wokwi не
+емулюється, ЗЛ-1): `help`, `get`, `set exit_delay 20`, `set debounce_ms 80`,
+`save`, `defaults`, `status`, `buffer`, `net off|on` (імітація втрати
+зв'язку), `sim bounce 1` (серія перемикань для фільтра брязкоту),
+`sim badcmd` (команда з підробленим підписом). Сервер змінює налаштування
+вузла через `PATCH /facilities/{id}/nodes/{node_id}` і налаштування об'єкта.
+
+Без кореневого сертифіката (`--no-ca`) прошивку для розробки збирають у
+середовищі `esp32dev_devtls` (TLS без перевірки сертифіката) і змінюють
+шляхи в `iot/wokwi.toml`.
+
 ## Тести та якість коду
 
 Тести створюють окрему БД `oberih_test` у тому самому контейнері PostgreSQL і
@@ -95,8 +142,9 @@ mypy app scripts tests # перевірка типів
 | [`docs/api.md`](docs/api.md) | Опис REST API, права доступу, формат помилок |
 | [`docs/openapi.json`](docs/openapi.json) | Специфікація OpenAPI (`python -m scripts.export_openapi`) |
 | [`docs/database.md`](docs/database.md) | ER-діаграма, міграції, індекси, відповідність вимогам |
-| [`docs/diagrams/`](docs/diagrams/) | Прецеденти, структура БД, діяльність (конвеєр подій, резервні копії), взаємодія (подія -> тривога, таймери) |
+| [`docs/diagrams/`](docs/diagrams/) | Прецеденти (сервер, IoT-вузол), структура БД, діяльність (конвеєр подій, резервні копії, цикл вузла), взаємодія (подія -> тривога, таймери, команда вузлу) |
 | [`docs/lab3-demo.md`](docs/lab3-demo.md) | Покрокова демонстрація бізнес-логіки й адміністрування (PowerShell) |
+| [`docs/lab4-demo.md`](docs/lab4-demo.md) | Демонстрація IoT-вузла у Wokwi: бізнес-логіка, налаштування, взаємодія із сервером |
 | [`docs/assumptions.md`](docs/assumptions.md) | Рішення, прийняті там, де вимоги неоднозначні |
 
 ## Автор

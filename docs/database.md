@@ -23,6 +23,7 @@ erDiagram
     NODES ||--o{ SENSORS : "підключає"
     NODES ||--o{ EVENTS : "надсилає"
     NODES ||--o{ CERTIFICATES : "автентифікація"
+    NODES ||--o{ NODE_COMMANDS : "отримує"
     SENSORS ||--o{ EVENTS : "формує"
     ALARMS ||--o{ ALARM_EVENTS : "складається з"
     EVENTS ||--o{ ALARM_EVENTS : "спричиняє"
@@ -98,6 +99,21 @@ erDiagram
         string status
         timestamptz last_seen_at
         bigint last_seq
+        int debounce_ms
+        int pir_lockout_s
+        int config_version
+        bytea command_key
+    }
+    NODE_COMMANDS {
+        uuid id PK
+        uuid node_id FK
+        string command_type
+        jsonb payload
+        bigint nonce
+        timestamptz issued_at
+        timestamptz expires_at
+        timestamptz acked_at
+        string status
     }
     SENSORS {
         uuid id PK
@@ -221,6 +237,8 @@ erDiagram
 | Захист даних (GDPR): видалення й експорт | `users.anonymized_at`, `users.privacy_consent_at`, `audit_log` |
 | Інтернаціоналізація | `users.locale`, `users.timezone`, `users.measurement_system`; час у UTC |
 | Недоступність вузла | `nodes.status`, `nodes.last_seen_at`, події `node_offline` та `node_online` |
+| Налаштування вузла (ІК-2, ІК-3, ІК-8) | `nodes.debounce_ms`, `nodes.pir_lockout_s`, `nodes.config_version` |
+| Підписані команди вузлу (ІК-7) | `node_commands` (тип, `payload`, `nonce` з унікальним `(node_id, nonce)`, строк дії, стан доставки); ключ підпису `nodes.command_key` |
 
 ## Міграції
 
@@ -229,6 +247,7 @@ erDiagram
 | `0001_initial_schema` | 23 таблиці, первинні й зовнішні ключі, обмеження CHECK, індекси |
 | `0002_tariffs_triggers_indexes` | Тарифні плани; тригер `forbid_log_change` для `arming_log`, `alarm_acknowledgements`, `audit_log`; індекси `ix_alarms_facility_status`, `ix_audit_log_entity`; унікальний `uq_nodes_device_token_hash` |
 | `0003_business_logic` | Статус тривоги `cancelled`; `users.blocked_at` і `users.time_format`; `scenario_runs.mismatches`; індекс `ix_events_dedup_window`; ключ `uq_events_dedup_key` знову вважає NULL різними (службові події вузла) |
+| `0004_iot_commands` | `nodes.debounce_ms`, `pir_lockout_s`, `config_version`, `command_key` з обмеженнями CHECK; таблиця `node_commands` з `uq_node_commands_node_nonce` та індексом за `node_id` |
 
 Повна структура таблиць зі стовпцями й типами — на діаграмі
 [`diagrams/db-structure.png`](diagrams/db-structure.png). Її генерує скрипт

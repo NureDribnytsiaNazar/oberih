@@ -1,0 +1,69 @@
+@startuml iot-activity
+' Діаграма діяльності IoT-вузла: один прохід NodeApp::loop().
+' Відповідає коду iot/src/node_app.cpp (poll_contacts, poll_pir, record_event,
+' service_events, service_heartbeat, process_command, update_indicators).
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #F8F8F8
+title Цикл роботи IoT-вузла (NodeApp::loop)
+
+start
+:setup(): NVS — налаштування, буфер, seq, nonce;\nWi-Fi Wokwi-GUEST (канал 6);
+repeat
+  :poll_console(): рядок Serial ->\nConsole::handle_line (get/set/save/sim);
+  :poll_contacts(): digitalRead геркони й тампер;
+  if (Debouncer::feed() = kChanged?\n(стабільно >= debounce_ms)) then (так)
+    :record_event(): opened/closed,\ntamper/tamper_restored;
+  else (брязкіт)
+  endif
+  :poll_pir(): фронт сигналу PIR;
+  if (MotionLockout::accept()?\n(минуло >= pir_lockout_s)) then (так)
+    :record_event(): motion;
+  else (блокування)
+  endif
+  note right
+    record_event():
+    ModeMachine::on_sensor_trigger() —
+    тампер/цілодобова зона -> alarm,
+    охорона -> entry_delay;
+    EventBuffer::push() — seq, час, NVS
+  end note
+  :ModeMachine::tick(): завершення\nзатримки виходу чи входу;
+  if (Є події, годинник синхронізовано,\nчас наступної спроби настав?) then (так)
+    :POST /device/events (пакет до 20)\nNetClient::post_json (HTTPS);
+    switch (classify_response())
+    case (2xx)
+      :EventBuffer::pop(); Backoff::reset();
+    case (5xx, таймаут, 429)
+      :події лишаються в буфері;\nзатримка min(1 c·2^n, 60 c)+jitter;
+    case (інші 4xx)
+      :після 3 спроб пакет відкидається;
+    endswitch
+  else (ні)
+  endif
+  if (Настав час heartbeat?) then (так)
+    :POST /device/heartbeat: режим, config_version,\nbuffer_depth, acked_command_ids;
+    if (Відповідь 2xx?) then (так)
+      :NodeClock::sync(server_epoch);\nadopt_server_seq(last_seq);\nmissed_polls = 0;
+      :apply_server_config(config)\nякщо версія більша;
+      repeat :Наступна команда;
+        :CommandVerifier::verify():\nHMAC (сталий час), |now − issued_at| <= 60 c,\nnonce > останнього;
+        if (accepted?) then (так)
+          :execute_command(): ModeMachine::force()\nабо set_config; nonce -> NVS;
+        else (ні)
+          :журнал: bad_signature / expired / replay;
+        endif
+        :id -> acked_command_ids\n(у наступному heartbeat);
+      repeat while (Ще команди?) is (так)
+    else (ні)
+      :missed_polls++; затримка Backoff;
+      if (missed_polls >= 3?) then (так)
+        :індикація втрати зв'язку;
+      endif
+    endif
+  else (ні)
+  endif
+  :update_indicators(): indicator_state() ->\nRGB LED і зумер;
+repeat while (живлення є)
+stop
+@enduml

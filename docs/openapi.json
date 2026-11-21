@@ -1416,7 +1416,7 @@
           "equipment"
         ],
         "summary": "Update Node",
-        "description": "Зміна назви вузла.",
+        "description": "Зміна назви або налаштувань вузла (debounce_ms, pir_lockout_s).",
         "operationId": "update_node_api_v1_facilities__facility_id__nodes__node_id__patch",
         "security": [
           {
@@ -1571,6 +1571,69 @@
               "application/json; charset=utf-8": {
                 "schema": {
                   "$ref": "#/components/schemas/NodeCommissionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/facilities/{facility_id}/nodes/{node_id}/commands": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "List Node Commands",
+        "description": "Останні 50 команд вузла та стан їхньої доставки.",
+        "operationId": "list_node_commands_api_v1_facilities__facility_id__nodes__node_id__commands_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "facility_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Facility Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json; charset=utf-8": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodeCommandAdminOut"
+                  },
+                  "title": "Response List Node Commands Api V1 Facilities  Facility Id  Nodes  Node Id  Commands Get"
                 }
               }
             }
@@ -5685,6 +5748,28 @@
         "title": "CertificateStatus",
         "description": "Стан сертифіката."
       },
+      "CommandStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "delivered",
+          "acked",
+          "expired"
+        ],
+        "title": "CommandStatus",
+        "description": "Стан доставки команди вузлу."
+      },
+      "CommandType": {
+        "type": "string",
+        "enum": [
+          "arm_away",
+          "arm_home",
+          "disarm",
+          "set_config"
+        ],
+        "title": "CommandType",
+        "description": "Команда сервера для IoT-вузла (ІК-7)."
+      },
       "Confirmation": {
         "properties": {
           "method": {
@@ -6902,11 +6987,58 @@
               }
             ],
             "title": "Firmware Version"
+          },
+          "acked_command_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Acked Command Ids",
+            "description": "Команди, які вузол отримав (виконав або відхилив)"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FacilityMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Режим локального автомата вузла (ІК-1)"
+          },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version",
+            "description": "Версія конфігурації, що діє на вузлі"
+          },
+          "buffer_depth": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buffer Depth",
+            "description": "Скільки подій чекає надсилання в буфері вузла"
           }
         },
         "type": "object",
         "title": "HeartbeatIn",
-        "description": "Службове повідомлення вузла (опитування)."
+        "description": "Службове повідомлення вузла (опитування).\n\nУсі поля необов'язкові: вузли попередніх версій надсилають лише\nfirmware_version або порожнє тіло."
       },
       "HeartbeatOut": {
         "properties": {
@@ -6921,6 +7053,47 @@
           },
           "facility_mode": {
             "$ref": "#/components/schemas/FacilityMode"
+          },
+          "server_epoch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Epoch",
+            "description": "Час сервера в секундах Unix (для вузла)"
+          },
+          "commands": {
+            "items": {
+              "$ref": "#/components/schemas/NodeCommandOut"
+            },
+            "type": "array",
+            "title": "Commands"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NodeConfigOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seq",
+            "description": "Найбільший seq вузла в архіві (якщо NVS вузла очищено)"
           }
         },
         "type": "object",
@@ -6930,7 +7103,7 @@
           "facility_mode"
         ],
         "title": "HeartbeatOut",
-        "description": "Відповідь вузлу: час сервера, інтервал опитування, режим об'єкта."
+        "description": "Відповідь вузлу: час сервера, інтервал опитування, режим, команди."
       },
       "ImportReport": {
         "properties": {
@@ -7258,6 +7431,123 @@
         "title": "MemberUser",
         "description": "Короткі відомості про користувача-учасника."
       },
+      "NodeCommandAdminOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "command_type": {
+            "$ref": "#/components/schemas/CommandType"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "nonce": {
+            "type": "integer",
+            "title": "Nonce"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "delivered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivered At"
+          },
+          "acked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acked At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CommandStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "command_type",
+          "payload",
+          "nonce",
+          "issued_at",
+          "expires_at",
+          "delivered_at",
+          "acked_at",
+          "status"
+        ],
+        "title": "NodeCommandAdminOut",
+        "description": "Команда в черзі вузла (для власника й монтажника)."
+      },
+      "NodeCommandOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CommandType"
+          },
+          "payload": {
+            "type": "string",
+            "title": "Payload"
+          },
+          "nonce": {
+            "type": "integer",
+            "title": "Nonce"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "signature": {
+            "type": "string",
+            "title": "Signature",
+            "description": "HMAC-SHA256 у шістнадцятковому вигляді"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "payload",
+          "nonce",
+          "issued_at",
+          "expires_at",
+          "signature"
+        ],
+        "title": "NodeCommandOut",
+        "description": "Підписана команда для вузла.\n\npayload — рядок канонічного JSON: вузол перевіряє підпис саме над цими\nбайтами, а потім розбирає їх. Час — у секундах Unix (UTC)."
+      },
       "NodeCommissionOut": {
         "properties": {
           "node_id": {
@@ -7269,6 +7559,11 @@
             "type": "string",
             "title": "Device Token"
           },
+          "command_key": {
+            "type": "string",
+            "title": "Command Key",
+            "description": "Ключ HMAC-SHA256 (64 hex-символи)"
+          },
           "commissioned_at": {
             "type": "string",
             "format": "date-time",
@@ -7279,10 +7574,50 @@
         "required": [
           "node_id",
           "device_token",
+          "command_key",
           "commissioned_at"
         ],
         "title": "NodeCommissionOut",
-        "description": "Токен пристрою. Показується лише один раз — у БД зберігається хеш."
+        "description": "Токен пристрою й ключ підпису команд. Показуються лише один раз."
+      },
+      "NodeConfigOut": {
+        "properties": {
+          "exit_delay_s": {
+            "type": "integer",
+            "title": "Exit Delay S"
+          },
+          "entry_delay_s": {
+            "type": "integer",
+            "title": "Entry Delay S"
+          },
+          "poll_interval_s": {
+            "type": "integer",
+            "title": "Poll Interval S"
+          },
+          "debounce_ms": {
+            "type": "integer",
+            "title": "Debounce Ms"
+          },
+          "pir_lockout_s": {
+            "type": "integer",
+            "title": "Pir Lockout S"
+          },
+          "config_version": {
+            "type": "integer",
+            "title": "Config Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exit_delay_s",
+          "entry_delay_s",
+          "poll_interval_s",
+          "debounce_ms",
+          "pir_lockout_s",
+          "config_version"
+        ],
+        "title": "NodeConfigOut",
+        "description": "Конфігурація вузла; застосовується, якщо config_version більша за чинну."
       },
       "NodeCreate": {
         "properties": {
@@ -7400,6 +7735,18 @@
             ],
             "title": "Commissioned At"
           },
+          "debounce_ms": {
+            "type": "integer",
+            "title": "Debounce Ms"
+          },
+          "pir_lockout_s": {
+            "type": "integer",
+            "title": "Pir Lockout S"
+          },
+          "config_version": {
+            "type": "integer",
+            "title": "Config Version"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -7417,6 +7764,9 @@
           "last_seen_at",
           "last_seq",
           "commissioned_at",
+          "debounce_ms",
+          "pir_lockout_s",
+          "config_version",
           "created_at"
         ],
         "title": "NodeOut",
@@ -7436,18 +7786,48 @@
       "NodeUpdate": {
         "properties": {
           "name": {
-            "type": "string",
-            "maxLength": 128,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Name"
+          },
+          "debounce_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debounce Ms"
+          },
+          "pir_lockout_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 600.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pir Lockout S"
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
         "title": "NodeUpdate",
-        "description": "Зміна назви вузла."
+        "description": "Зміна назви або налаштувань вузла (ІК-2, ІК-3).\n\nЗміна налаштувань збільшує config_version і ставить у чергу команду\nset_config. Межі збігаються з межами у прошивці (iot/include/config.h)."
       },
       "Page_AdminUserOut_": {
         "properties": {

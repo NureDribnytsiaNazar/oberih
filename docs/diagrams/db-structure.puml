@@ -151,11 +151,15 @@ entity "nodes" as nodes {
   * name : varchar(128)
   * serial : varchar(64) <<UK>>
     device_token_hash : varchar(64) <<UK>>
+    command_key : bytea
     firmware_version : varchar(32)
   * status : enum nodestatus
     last_seen_at : timestamp with time zone
   * last_seq : bigint
     commissioned_at : timestamp with time zone
+  * debounce_ms : integer
+  * pir_lockout_s : integer
+  * config_version : integer
   * created_at : timestamp with time zone
 }
 
@@ -225,6 +229,20 @@ entity "certificates" as certificates {
   * pem : varchar
   * created_at : timestamp with time zone
     revoked_at : timestamp with time zone
+}
+
+entity "node_commands" as node_commands {
+  * id : uuid <<PK>>
+  --
+  * node_id : uuid <<FK>>
+  * command_type : enum commandtype
+  * payload : jsonb
+  * nonce : bigint
+  * issued_at : timestamp with time zone
+  * expires_at : timestamp with time zone
+    delivered_at : timestamp with time zone
+    acked_at : timestamp with time zone
+  * status : enum commandstatus
 }
 
 entity "scenario_runs" as scenario_runs {
@@ -310,6 +328,7 @@ facility_members }o--|| users
 facility_settings }o--|| facilities
 incident_summaries }o--o| users
 incident_summaries }o--|| alarms
+node_commands }o--|| nodes
 nodes }o--|| facilities
 notification_settings }o--|| facilities
 notification_settings }o--|| users
