@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.errors import BadRequestError, NotFoundError
-from app.models.devices import Node, Sensor
+from app.models.devices import Node, NodeCommand, Sensor
 from app.l10n import collated
 from app.models.enums import Locale, NodeStatus
 from app.models.facilities import Facility, Zone
@@ -22,7 +22,7 @@ from app.schemas.facilities import (
     ZoneUpdate,
 )
 from app.security import generate_token, hash_token
-from app.services import audit
+from app.services import audit, commands
 from app.services.common import apply_changes, commit_or_conflict, get_in_facility
 
 # --- Зони --------------------------------------------------------------------
@@ -92,9 +92,16 @@ def create_node(db: Session, facility: Facility, data: NodeCreate) -> Node:
 def update_node(
     db: Session, facility: Facility, node_id: uuid.UUID, data: NodeUpdate
 ) -> Node:
-    """Змінює назву вузла."""
+    """Змінює назву або налаштування вузла.
+
+    Зміна debounce_ms чи pir_lockout_s збільшує версію конфігурації й
+    ставить вузлу команду set_config (ІК-8).
+    """
     node = get_node(db, facility, node_id)
+    before = (node.debounce_ms, node.pir_lockout_s)
     apply_changes(node, data)
+    if (node.debounce_ms, node.pir_lockout_s) != before:
+        commands.config_changed(db, facility, [node])
     db.commit()
     return node
 
@@ -109,22 +116,35 @@ def delete_node(db: Session, facility: Facility, node_id: uuid.UUID) -> None:
 def commission_node(
     db: Session, facility: Facility, actor: User, node_id: uuid.UUID
 ) -> NodeCommissionOut:
-    """Введення вузла в експлуатацію: видає новий токен пристрою.
+    """Введення вузла в експлуатацію: видає токен і ключ підпису команд.
 
-    Токен повертається лише один раз, у БД зберігається його хеш.
-    Повторне введення в експлуатацію робить попередній токен недійсним.
+    Обидва значення повертаються лише один раз. У БД зберігаються хеш
+    токена й сам ключ (сервер підписує ним команди). Повторне введення
+    робить попередні токен і ключ недійсними.
     Вузол стає online після першого службового повідомлення.
     """
     node = get_node(db, facility, node_id)
     token = generate_token()
+    command_key = commands.new_command_key()
     node.device_token_hash = hash_token(token)
+    node.command_key = command_key
     node.commissioned_at = datetime.now(UTC)
     node.status = NodeStatus.PROVISIONING
     audit.record(db, actor.id, "node.commission", "node", node.id)
     db.commit()
     return NodeCommissionOut(
-        node_id=node.id, device_token=token, commissioned_at=node.commissioned_at
+        node_id=node.id,
+        device_token=token,
+        command_key=command_key.hex(),
+        commissioned_at=node.commissioned_at,
     )
+
+
+def list_node_commands(
+    db: Session, facility: Facility, node_id: uuid.UUID
+) -> list[NodeCommand]:
+    """Останні команди вузла (для перевірки доставки)."""
+    return commands.list_commands(db, get_node(db, facility, node_id))
 
 
 # --- Датчики -----------------------------------------------------------------

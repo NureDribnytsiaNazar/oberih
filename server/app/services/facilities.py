@@ -15,7 +15,7 @@ from app.schemas.facilities import (
     FacilitySettingsUpdate,
     FacilityUpdate,
 )
-from app.services import audit
+from app.services import audit, commands
 from app.services.common import apply_changes
 from app.services.users import validate_timezone
 
@@ -81,11 +81,23 @@ def remove(db: Session, user: User, facility: Facility) -> None:
 def update_settings(
     db: Session, facility: Facility, data: FacilitySettingsUpdate
 ) -> FacilitySettings:
-    """Змінює параметри бізнес-логіки об'єкта."""
+    """Змінює параметри бізнес-логіки об'єкта.
+
+    Якщо змінено параметри, які використовує вузол (затримки, інтервал
+    опитування), вузлам надсилається нова конфігурація (set_config).
+    """
     settings = facility.settings
+    before = _node_visible(settings)
     apply_changes(settings, data)
     if settings.alarm_threshold > settings.confirmed_threshold:
         db.rollback()
         raise BadRequestError("invalid_thresholds")
+    if _node_visible(settings) != before:
+        commands.config_changed(db, facility)
     db.commit()
     return settings
+
+
+def _node_visible(settings: FacilitySettings) -> tuple[int, int, int]:
+    """Параметри об'єкта, що входять у конфігурацію вузла."""
+    return settings.exit_delay_s, settings.entry_delay_s, settings.poll_interval_s

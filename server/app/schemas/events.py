@@ -14,6 +14,8 @@ from app.models.enums import (
     AlarmLevel,
     AlarmStatus,
     AuthMethod,
+    CommandStatus,
+    CommandType,
     EventType,
     FacilityMode,
 )
@@ -135,17 +137,81 @@ class DeviceEventsResult(BaseModel):
 
 
 class HeartbeatIn(BaseModel):
-    """Службове повідомлення вузла (опитування)."""
+    """Службове повідомлення вузла (опитування).
+
+    Усі поля необов'язкові: вузли попередніх версій надсилають лише
+    firmware_version або порожнє тіло.
+    """
 
     firmware_version: Annotated[str, Field(max_length=32)] | None = None
+    acked_command_ids: list[uuid.UUID] = Field(
+        default_factory=list,
+        max_length=50,
+        description="Команди, які вузол отримав (виконав або відхилив)",
+    )
+    mode: FacilityMode | None = Field(
+        default=None, description="Режим локального автомата вузла (ІК-1)"
+    )
+    config_version: Annotated[int, Field(ge=0)] | None = Field(
+        default=None, description="Версія конфігурації, що діє на вузлі"
+    )
+    buffer_depth: Annotated[int, Field(ge=0)] | None = Field(
+        default=None, description="Скільки подій чекає надсилання в буфері вузла"
+    )
+
+
+class NodeCommandOut(BaseModel):
+    """Підписана команда для вузла.
+
+    payload — рядок канонічного JSON: вузол перевіряє підпис саме над цими
+    байтами, а потім розбирає їх. Час — у секундах Unix (UTC).
+    """
+
+    id: uuid.UUID
+    type: CommandType
+    payload: str
+    nonce: int
+    issued_at: int
+    expires_at: int
+    signature: str = Field(description="HMAC-SHA256 у шістнадцятковому вигляді")
+
+
+class NodeConfigOut(BaseModel):
+    """Конфігурація вузла; застосовується, якщо config_version більша за чинну."""
+
+    exit_delay_s: int
+    entry_delay_s: int
+    poll_interval_s: int
+    debounce_ms: int
+    pir_lockout_s: int
+    config_version: int
 
 
 class HeartbeatOut(BaseModel):
-    """Відповідь вузлу: час сервера, інтервал опитування, режим об'єкта."""
+    """Відповідь вузлу: час сервера, інтервал опитування, режим, команди."""
 
     server_time: datetime
     poll_interval_s: int
     facility_mode: FacilityMode
+    server_epoch: int | None = Field(
+        default=None, description="Час сервера в секундах Unix (для вузла)"
+    )
+    commands: list[NodeCommandOut] = Field(default_factory=list)
+    config: NodeConfigOut | None = None
+
+
+class NodeCommandAdminOut(ORMModel):
+    """Команда в черзі вузла (для власника й монтажника)."""
+
+    id: uuid.UUID
+    command_type: CommandType
+    payload: dict[str, Any]
+    nonce: int
+    issued_at: datetime
+    expires_at: datetime
+    delivered_at: datetime | None
+    acked_at: datetime | None
+    status: CommandStatus
 
 
 # --- Архів подій і тривоги ---------------------------------------------------

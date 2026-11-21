@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, status
 
 from app.deps import CurrentUser, DbSession, UserLocale
+from app.schemas.events import NodeCommandAdminOut
 from app.schemas.facilities import (
     NodeCommissionOut,
     NodeCreate,
@@ -101,7 +102,7 @@ def update_node(
     user: CurrentUser,
     db: DbSession,
 ) -> object:
-    """Зміна назви вузла."""
+    """Зміна назви або налаштувань вузла (debounce_ms, pir_lockout_s)."""
     facility, _ = require_access(db, facility_id, user, Permission.COMMISSION_NODE)
     return service.update_node(db, facility, node_id, data)
 
@@ -122,6 +123,15 @@ def commission_node(
     """Введення в експлуатацію: токен пристрою показується лише один раз."""
     facility, _ = require_access(db, facility_id, user, Permission.COMMISSION_NODE)
     return service.commission_node(db, facility, user, node_id)
+
+
+@router.get("/nodes/{node_id}/commands", response_model=list[NodeCommandAdminOut])
+def list_node_commands(
+    facility_id: uuid.UUID, node_id: uuid.UUID, user: CurrentUser, db: DbSession
+) -> object:
+    """Останні 50 команд вузла та стан їхньої доставки."""
+    facility, _ = require_access(db, facility_id, user, Permission.COMMISSION_NODE)
+    return service.list_node_commands(db, facility, node_id)
 
 
 # --- Датчики -----------------------------------------------------------------

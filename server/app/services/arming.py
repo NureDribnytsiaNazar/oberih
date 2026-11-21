@@ -20,6 +20,7 @@ from app.models.users import User
 from app.pagination import PageParams, paginate
 from app.schemas.events import ArmMode, DisarmRequest
 from app.services.access import Permission, has_permission
+from app.services import commands
 from app.services.alarm_store import close_open_alarms
 from app.services.reauth import confirm_action
 from app.services.state_machine import ModeTrigger, expired_delay_trigger, next_mode
@@ -98,9 +99,13 @@ def arm(
     source: ActionSource,
     ip_address: str | None,
 ) -> Facility:
-    """Постановка на охорону в повному режимі або в режимі «Вдома»."""
+    """Постановка на охорону в повному режимі або в режимі «Вдома».
+
+    Вузлам об'єкта ставиться підписана команда постановки (ІК-7).
+    """
     apply_due_timer(db, facility)
     transition(db, facility, ARM_TRIGGERS[mode], source, user.id, None, ip_address)
+    commands.enqueue_mode(db, facility)
     db.commit()
     return facility
 
@@ -117,6 +122,7 @@ def disarm(
 
     Скидати тривогу може лише той, кому дозволено підтверджувати тривоги.
     Зняття під час затримки входу скасовує відкриту тривогу (законний вхід).
+    Вузлам об'єкта ставиться підписана команда зняття (ІК-7).
     """
     apply_due_timer(db, facility)
     if facility.mode == FacilityMode.ALARM and not has_permission(
@@ -137,6 +143,7 @@ def disarm(
     )
     if was_entry_delay:
         close_open_alarms(db, facility.id, cancelled=True)
+    commands.enqueue_mode(db, facility)
     db.commit()
     return facility
 

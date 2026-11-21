@@ -176,9 +176,15 @@ class NodeCreate(BaseModel):
 
 
 class NodeUpdate(BaseModel):
-    """Зміна назви вузла."""
+    """Зміна назви або налаштувань вузла (ІК-2, ІК-3).
 
-    name: ShortName
+    Зміна налаштувань збільшує config_version і ставить у чергу команду
+    set_config. Межі збігаються з межами у прошивці (iot/include/config.h).
+    """
+
+    name: ShortName | None = None
+    debounce_ms: Annotated[int, Field(ge=10, le=1000)] | None = None
+    pir_lockout_s: Annotated[int, Field(ge=0, le=600)] | None = None
 
 
 class NodeOut(ORMModel):
@@ -193,14 +199,18 @@ class NodeOut(ORMModel):
     last_seen_at: datetime | None
     last_seq: int
     commissioned_at: datetime | None
+    debounce_ms: int
+    pir_lockout_s: int
+    config_version: int
     created_at: datetime
 
 
 class NodeCommissionOut(BaseModel):
-    """Токен пристрою. Показується лише один раз — у БД зберігається хеш."""
+    """Токен пристрою й ключ підпису команд. Показуються лише один раз."""
 
     node_id: uuid.UUID
     device_token: str
+    command_key: str = Field(description="Ключ HMAC-SHA256 (64 hex-символи)")
     commissioned_at: datetime
 
 
