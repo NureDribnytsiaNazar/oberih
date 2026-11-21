@@ -66,11 +66,14 @@ services:
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
+      # Вхід тунелю: лише з самої машини (cloudflared tunnel --url http://localhost:8081).
+      - "127.0.0.1:${TUNNEL_PORT:-8081}:8081"
     environment:
       # Зовнішній порт HTTPS для редиректу з HTTP.
       HTTPS_PORT: ${HTTPS_PORT:-443}
     volumes:
       - ./deploy/nginx/oberih.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./deploy/nginx/locations.conf:/etc/nginx/oberih/locations.conf:ro
       - ./deploy/certs:/etc/nginx/certs:ro
     depends_on:
       api:
