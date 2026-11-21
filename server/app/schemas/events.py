@@ -198,6 +198,10 @@ class HeartbeatOut(BaseModel):
     )
     commands: list[NodeCommandOut] = Field(default_factory=list)
     config: NodeConfigOut | None = None
+    last_seq: int | None = Field(
+        default=None,
+        description="Найбільший seq вузла в архіві (якщо NVS вузла очищено)",
+    )
 
 
 class NodeCommandAdminOut(ORMModel):

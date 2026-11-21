@@ -54,4 +54,5 @@ def heartbeat(
         server_epoch=int(now.timestamp()),
         commands=pending,
         config=config,
+        last_seq=node.last_seq,
     )

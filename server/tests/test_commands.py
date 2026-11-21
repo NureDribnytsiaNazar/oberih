@@ -217,6 +217,7 @@ def test_old_heartbeat_is_compatible(
     assert {"server_time", "poll_interval_s", "facility_mode"} <= empty.keys()
     old = _heartbeat(client, device, firmware_version="0.1.0")
     assert old["poll_interval_s"] == 30
+    assert old["last_seq"] == 0
 
 
 def test_mode_reconciled_after_offline_work(
