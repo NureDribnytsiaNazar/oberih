@@ -35,7 +35,7 @@ docker compose up -d db
 cd server
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # застосунок + інструменти перевірки
 alembic upgrade head
 
 # 4. Центр сертифікації для сертифікатів вузлів (один раз; каталог CA_DIR)

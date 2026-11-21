@@ -1,0 +1,13 @@
+.venv/
+.mypy_cache/
+.pytest_cache/
+**/__pycache__/
+tests/
+ca/
+backups/
+.env
+*.pem
+*.key
+.flake8
+pyproject.toml
+requirements-dev.txt
