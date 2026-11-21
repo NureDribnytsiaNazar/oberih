@@ -211,6 +211,20 @@ def device(
     client: TestClient, owner: dict[str, str], facility_id: str
 ) -> dict[str, Any]:
     """Вузол у експлуатації з герконом (канал 1), PIR (2) і тампером (3)."""
+    return make_device(client, owner, facility_id, "ESP32-0001")
+
+
+@pytest.fixture()
+def second_device(client: TestClient) -> dict[str, Any]:
+    """Вузол іншого власника на іншому об'єкті."""
+    other = new_user(client, "other-owner@test.ua")
+    return make_device(client, other, create_facility(client, other), "ESP32-0002")
+
+
+def make_device(
+    client: TestClient, owner: dict[str, str], facility_id: str, serial: str
+) -> dict[str, Any]:
+    """Створює зони, вузол із трьома датчиками й вводить його в експлуатацію."""
     base = f"{API}/facilities/{facility_id}"
     zones = {}
     for name, zone_type in (
@@ -223,7 +237,7 @@ def device(
         )
         zones[zone_type] = response.json()["id"]
     node = client.post(
-        f"{base}/nodes", json={"name": "Вузол 1", "serial": "ESP32-0001"}, headers=owner
+        f"{base}/nodes", json={"name": "Вузол 1", "serial": serial}, headers=owner
     ).json()
     for channel, sensor_type, zone_type in (
         (1, "reed", "perimeter"),
@@ -248,4 +262,5 @@ def device(
         "node_id": node["id"],
         "zones": zones,
         "headers": {"X-Device-Token": commission["device_token"]},
+        "command_key": commission["command_key"],
     }
