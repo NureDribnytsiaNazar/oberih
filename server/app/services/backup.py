@@ -22,6 +22,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     Enum,
+    LargeBinary,
     Numeric,
     Table,
     Time,
@@ -56,7 +57,7 @@ SETTINGS_TABLES = (
     "test_scenarios",
 )
 # Стовпці, що не потрапляють у копію налаштувань і не перезаписуються.
-SETTINGS_SECRET_COLUMNS = {"nodes": frozenset({"device_token_hash"})}
+SETTINGS_SECRET_COLUMNS = {"nodes": frozenset({"device_token_hash", "command_key"})}
 
 
 @dataclass(frozen=True)
@@ -273,6 +274,8 @@ def _encode(value: Any) -> Any:
         return str(value)
     if isinstance(value, (datetime, date, time)):
         return value.isoformat()
+    if isinstance(value, bytes):
+        return value.hex()
     raise TypeError(f"Unsupported value type: {type(value).__name__}")
 
 
@@ -300,6 +303,8 @@ def _decode(column_type: Any, value: Any) -> Any:
         return column_type.enum_class(value)
     if isinstance(column_type, Numeric):
         return Decimal(value)
+    if isinstance(column_type, LargeBinary):
+        return bytes.fromhex(value)
     return value
 
 

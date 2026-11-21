@@ -164,6 +164,24 @@ class BackupStatus(str, enum.Enum):
     FAILED = "failed"
 
 
+class CommandType(str, enum.Enum):
+    """Команда сервера для IoT-вузла (ІК-7)."""
+
+    ARM_AWAY = "arm_away"
+    ARM_HOME = "arm_home"
+    DISARM = "disarm"
+    SET_CONFIG = "set_config"
+
+
+class CommandStatus(str, enum.Enum):
+    """Стан доставки команди вузлу."""
+
+    PENDING = "pending"  # у черзі, ще не видавалася
+    DELIVERED = "delivered"  # видана у відповіді heartbeat, чекає підтвердження
+    ACKED = "acked"  # вузол підтвердив отримання
+    EXPIRED = "expired"  # строк дії минув до підтвердження
+
+
 class CertificateStatus(str, enum.Enum):
     """Стан сертифіката."""
 
