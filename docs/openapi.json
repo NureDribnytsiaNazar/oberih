@@ -3,7 +3,7 @@
   "info": {
     "title": "Оберіг — програмна система для безпеки житла",
     "description": "REST API серверної частини «Оберіг». Час у запитах і відповідях — UTC у форматі ISO 8601. Мова повідомлень про помилки обирається за заголовком Accept-Language (uk, en).",
-    "version": "0.3.0"
+    "version": "0.5.0"
   },
   "paths": {
     "/api/v1/auth/register": {
@@ -5008,7 +5008,7 @@
           "service"
         ],
         "summary": "Health",
-        "description": "Повертає стан сервісу для перевірки доступності.",
+        "description": "Стан сервісу й підключення до БД (HEALTHCHECK контейнера, smoke-тест).",
         "operationId": "health_api_v1_health_get",
         "responses": {
           "200": {

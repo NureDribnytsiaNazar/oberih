@@ -17,7 +17,9 @@
 | `iot/src/` | Модулі вузла: фільтри, автомат режимів, буфер, повтори, команди, налаштування |
 | `iot/test/` | Юніт-тести чистої логіки вузла (Unity, `pio test -e native`) |
 | `docs/` | Специфікація API, схема БД, діаграми, прийняті рішення |
-| `docker-compose.yml` | Локальне середовище (PostgreSQL 16) |
+| `docker-compose.yml` | Середовище розробки (лише PostgreSQL 16) |
+| `docker-compose.prod.yml` | Розгортання: PostgreSQL, застосунок, Nginx (ЛБ5) |
+| `deploy/` | Конфігурація Nginx, скрипти секретів, сертифіката, smoke-тесту й копій БД |
 
 ## Швидкий старт (Windows, PowerShell)
 
@@ -119,6 +121,20 @@ Simulator*. Перемикачі `1 Door`, `2 Window`, `4 Tamper` — конта
 середовищі `esp32dev_devtls` (TLS без перевірки сертифіката) і змінюють
 шляхи в `iot/wokwi.toml`.
 
+## Розгортання (Docker Compose + Nginx)
+
+```powershell
+.\deploy\init-env.ps1        # .env.prod із випадковими секретами
+.\deploy\make-dev-cert.ps1   # самопідписаний сертифікат для Nginx
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec -e SEED_PASSWORD=Demo-Password-1 api python -m scripts.seed
+.\deploy\smoke-test.ps1 -BaseUrl https://localhost -Password Demo-Password-1 -SkipCertificateCheck
+cloudflared tunnel --url http://localhost:8081   # публічна HTTPS-адреса для вузла у Wokwi
+```
+
+Подробиці (варіанти локально/VPS, ліміти Nginx, резервне копіювання,
+секрети вузла в розгортанні) — у [`docs/deploy.md`](docs/deploy.md).
+
 ## Тести та якість коду
 
 Тести створюють окрему БД `oberih_test` у тому самому контейнері PostgreSQL і
@@ -144,6 +160,8 @@ mypy app scripts tests # перевірка типів
 | [`docs/database.md`](docs/database.md) | ER-діаграма, міграції, індекси, відповідність вимогам |
 | [`docs/diagrams/`](docs/diagrams/) | Прецеденти (сервер, IoT-вузол), структура БД, діяльність (конвеєр подій, резервні копії, цикл вузла), взаємодія (подія -> тривога, таймери, команда вузлу) |
 | [`docs/lab3-demo.md`](docs/lab3-demo.md) | Покрокова демонстрація бізнес-логіки й адміністрування (PowerShell) |
+| [`docs/deploy.md`](docs/deploy.md) | Розгортання: Docker, Compose, Nginx, тунель або VPS, smoke-тест, копії БД |
+| [`docs/lab5-demo.md`](docs/lab5-demo.md) | Наскрізна демонстрація на розгорнутій системі (вузол у Wokwi + сервер) |
 | [`docs/lab4-demo.md`](docs/lab4-demo.md) | Демонстрація IoT-вузла у Wokwi: бізнес-логіка, налаштування, взаємодія із сервером |
 | [`docs/assumptions.md`](docs/assumptions.md) | Рішення, прийняті там, де вимоги неоднозначні |
 
