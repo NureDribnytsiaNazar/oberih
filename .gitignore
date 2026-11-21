@@ -36,3 +36,8 @@ ca/
 
 # Секрети прошивки (генерує server/scripts/provision_node.py)
 iot/include/secrets.h
+
+# Розгортання (ЛБ5): секрети, сертифікати, копії БД
+.env.prod
+deploy/certs/
+deploy/backups/

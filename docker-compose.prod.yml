@@ -1,0 +1,84 @@
+# Розгортання «Оберіг» (ЛБ5): PostgreSQL + застосунок + Nginx.
+# Запуск (з кореня репозиторію, після налаштування .env.prod і сертифіката):
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Порт БД і порт застосунку назовні не публікуються: доступ лише через Nginx.
+
+name: oberih-prod
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-oberih}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}@db:5432/${POSTGRES_DB:-oberih}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.prod}
+  WORKER_INTERVAL_S: ${WORKER_INTERVAL_S:-5}
+  PURGE_INTERVAL_H: ${PURGE_INTERVAL_H:-24}
+  SUMMARY_PROVIDER: ${SUMMARY_PROVIDER:-template}
+  BACKUP_DIR: /data/backups
+  CA_DIR: /data/ca
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-oberih}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB:-oberih}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oberih} -d ${POSTGRES_DB:-oberih}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Одноразово: міграції та центр сертифікації (наявний не перезаписується).
+  migrate:
+    build: ./server
+    image: oberih-api:latest
+    environment:
+      <<: *app-env
+      WORKER_ENABLED: "false"
+    command: ["sh", "-c", "alembic upgrade head && python -m scripts.init_ca"]
+    volumes:
+      - app-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # Один екземпляр: фоновий виконавець таймерів працює всередині процесу.
+  api:
+    image: oberih-api:latest
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      WORKER_ENABLED: "true"
+    volumes:
+      - app-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/nginx/oberih.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --no-check-certificate https://127.0.0.1/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  db-data:
+  # Резервні копії (BACKUP_DIR) і центр сертифікації (CA_DIR).
+  app-data:
