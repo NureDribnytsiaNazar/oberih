@@ -33,3 +33,6 @@ backups/
 ca/
 *.crt
 *.json.gz
+
+# Секрети прошивки (генерує server/scripts/provision_node.py)
+iot/include/secrets.h

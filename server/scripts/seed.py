@@ -3,7 +3,9 @@
 Створює користувачів усіх ролей, демо-об'єкт із зонами, вузлом, датчиками
 та розкладом. Пароль демо-користувачів береться зі змінної середовища
 SEED_PASSWORD; якщо її немає, генерується випадковий і виводиться один раз.
-Токен демо-вузла також виводиться один раз (у БД зберігається лише хеш).
+Токен демо-вузла та ключ підпису команд також виводяться один раз (у БД
+зберігається хеш токена). Для прошивки їх зручніше отримати скриптом
+scripts/provision_node.py, який записує iot/include/secrets.h.
 
 Для показу ЛБ3 додаються: об'єкт під охороною (armed_away), три закриті
 тривоги (дві позначені як хибні), тестовий сценарій і два сертифікати вузла
@@ -16,6 +18,7 @@ SEED_PASSWORD; якщо її немає, генерується випадков
 
 import os
 import secrets
+from dataclasses import dataclass
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 
@@ -54,7 +57,7 @@ from app.models.facilities import (
 )
 from app.models.users import TariffPlan, User
 from app.security import generate_token, hash_password, hash_token
-from app.services import arming, certificates
+from app.services import arming, certificates, commands
 from app.services.state_machine import ModeTrigger
 
 DEMO_DOMAIN = "oberih.local"
@@ -85,8 +88,17 @@ DEMO_SCENARIO = "Проникнення через вхідні двері"
 DEMO_ALARMS = ((5, True), (3, True), (1, False))
 
 
-def seed(db: Session, password: str) -> str | None:
-    """Створює демо-дані; повертає токен вузла або None, якщо дані вже є."""
+@dataclass(frozen=True)
+class NodeCredentials:
+    """Секрети демо-вузла, що показуються один раз."""
+
+    node_id: str
+    device_token: str
+    command_key: str
+
+
+def seed(db: Session, password: str) -> NodeCredentials | None:
+    """Створює демо-дані; повертає секрети вузла або None, якщо дані вже є."""
     owner_email = f"owner@{DEMO_DOMAIN}"
     if db.scalar(select(User.id).where(User.email == owner_email)):
         return None
@@ -132,11 +144,13 @@ def seed(db: Session, password: str) -> str | None:
     db.flush()
 
     token = generate_token()
+    command_key = commands.new_command_key()
     node = Node(
         facility_id=facility.id,
         name="Вузол передпокою",
         serial="ESP32-DEMO-001",
         device_token_hash=hash_token(token),
+        command_key=command_key,
         commissioned_at=now,
     )
     for channel, (name, sensor_type, zone_name) in DEMO_SENSORS.items():
@@ -159,7 +173,7 @@ def seed(db: Session, password: str) -> str | None:
         )
     )
     db.commit()
-    return token
+    return NodeCredentials(str(node.id), token, command_key.hex())
 
 
 def seed_lab3(db: Session) -> bool:
@@ -263,9 +277,9 @@ def main() -> None:
     if password is None:
         password = secrets.token_urlsafe(9)
     with SessionLocal() as db:
-        token = seed(db, password)
+        credentials = seed(db, password)
         added_lab3 = seed_lab3(db)
-    if token is None:
+    if credentials is None:
         print("Базові демо-дані вже є.")
         if added_lab3:
             print("Додано демо-дані ЛБ3: тривоги, сценарій, сертифікати.")
@@ -277,7 +291,10 @@ def main() -> None:
         print(f"  {email:<24} {label:<15} тариф {tariff}")
     if generated:
         print(f"Пароль усіх демо-користувачів (показується один раз): {password}")
-    print(f"Токен пристрою ESP32-DEMO-001 (показується один раз): {token}")
+    print("Вузол ESP32-DEMO-001 (секрети показуються один раз):")
+    print(f"  node_id      {credentials.node_id}")
+    print(f"  device_token {credentials.device_token}")
+    print(f"  command_key  {credentials.command_key}")
     if added_lab3:
         print("Додано демо-дані ЛБ3: тривоги, сценарій, сертифікати.")
 
