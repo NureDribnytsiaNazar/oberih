@@ -1,0 +1,3 @@
+# Скрипти оболонки й Dockerfile мають запускатися в Linux-контейнерах
+*.sh text eol=lf
+Dockerfile text eol=lf
