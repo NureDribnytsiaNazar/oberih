@@ -9,6 +9,7 @@
 #define OBERIH_DEVICE_TOKEN "device-token-from-commissioning"
 #define OBERIH_COMMAND_KEY \
   "0000000000000000000000000000000000000000000000000000000000000000"
-// Кореневий сертифікат сервера чи тунелю (PEM). Без нього потрібен прапорець
+// Сертифікат-якір довіри (PEM): видавець сертифіката сервера чи тунелю
+// або корінь ланцюжка (provision_node --ca-level). Без нього потрібен прапорець
 // OBERIH_DEV_TLS (середовище esp32dev_devtls), що вимикає перевірку.
-// #define OBERIH_ROOT_CA "-----BEGIN CERTIFICATE-----\n...\n"
+// #define OBERIH_CA_CERT "-----BEGIN CERTIFICATE-----\n...\n"

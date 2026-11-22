@@ -32,8 +32,19 @@ constexpr size_t kConsoleLineMax = 160;
 constexpr uint32_t kBackoffSeedEvents = 0x0BE21C;
 constexpr uint32_t kBackoffSeedHeartbeat = 0x0BE21D;
 
+// Виводить текст, замінюючи LF на CR LF: монітор Serial у Wokwi (як і
+// більшість терміналів) не повертає каретку сам.
+void print_lines(const std::string& text) {
+  for (char symbol : text) {
+    if (symbol == '\n') {
+      Serial.print('\r');
+    }
+    Serial.print(symbol);
+  }
+}
+
 void log_line(const char* tag, const std::string& message) {
-  Serial.printf("[%s] %s\n", tag, message.c_str());
+  Serial.printf("[%s] %s\r\n", tag, message.c_str());
 }
 
 }  // namespace
@@ -65,7 +76,7 @@ NodeApp::NodeApp()
 
 void NodeApp::begin() {
   Serial.begin(config::kSerialBaud);
-  Serial.printf("\nOberih node %s\n", config::kFirmwareVersion);
+  Serial.printf("\r\nOberih node %s\r\n", config::kFirmwareVersion);
 
   for (ContactInput& contact : contacts_) {
     pinMode(contact.pin, INPUT_PULLUP);
@@ -85,7 +96,7 @@ void NodeApp::begin() {
   net_.begin(OBERIH_DEVICE_TOKEN);
   net_.set_server_url(settings_.server_url);
   if (!net_.tls_ready()) {
-    log_line("net", "no root CA (secrets.h) and no OBERIH_DEV_TLS: offline");
+    log_line("net", "no CA certificate (secrets.h) and no OBERIH_DEV_TLS: offline");
   }
   WiFi.mode(WIFI_STA);
   WiFi.begin(config::kWifiSsid, config::kWifiPassword, config::kWifiChannel);
@@ -151,8 +162,8 @@ void NodeApp::poll_console() {
       }
       continue;
     }
-    Serial.printf("> %s\n", console_line_.c_str());
-    Serial.print(console_.handle_line(console_line_).c_str());
+    Serial.printf("> %s\r\n", console_line_.c_str());
+    print_lines(console_.handle_line(console_line_));
     console_line_.clear();
   }
 }
@@ -195,7 +206,7 @@ void NodeApp::record_event(const ChannelInfo& info, EventType type,
     alarm = changed || info.sensor == SensorKind::kTamper;
   }
   const uint64_t seq = buffer_.push(info.channel, type, alarm, clock_, now_ms);
-  Serial.printf("[event] seq=%" PRIu64 " ch=%u %s mode=%s%s\n", seq,
+  Serial.printf("[event] seq=%" PRIu64 " ch=%u %s mode=%s%s\r\n", seq,
                 info.channel, event_type_name(type), mode_name(machine_.mode()),
                 alarm ? " ALARM" : "");
   if (events_backoff_.attempts() == 0) {
@@ -235,6 +246,10 @@ void NodeApp::service_heartbeat(uint32_t now_ms) {
   HeartbeatReply reply;
   if (classify_response(result.status) != SendOutcome::kDelivered ||
       !parse_heartbeat(result.body, &reply)) {
+    if (!net_.last_error().empty()) {
+      log_line("net", net_.last_error() + " after " +
+                          std::to_string(net_.last_duration_ms()) + " ms");
+    }
     heartbeat_failed(result.status, millis());
     return;
   }
@@ -283,7 +298,7 @@ void NodeApp::heartbeat_failed(int status, uint32_t now_ms) {
   restored_ = false;
   const uint32_t delay_ms = heartbeat_backoff_.next_delay_ms();
   next_heartbeat_ms_ = now_ms + delay_ms;
-  Serial.printf("[net] heartbeat failed (status %d), missed %u, retry in %u ms\n",
+  Serial.printf("[net] heartbeat failed (status %d), missed %u, retry in %u ms\r\n",
                 status, static_cast<unsigned>(missed_polls_),
                 static_cast<unsigned>(delay_ms));
   if (missed_polls_ == config::kMissedPollsLimit) {
@@ -315,7 +330,7 @@ void NodeApp::service_events(uint32_t now_ms) {
       buffer_.pop(count);
       events_backoff_.reset();
       rejected_attempts_ = 0;
-      Serial.printf("[events] sent %u: accepted %u, duplicates %u, left %u\n",
+      Serial.printf("[events] sent %u: accepted %u, duplicates %u, left %u\r\n",
                     static_cast<unsigned>(count), static_cast<unsigned>(accepted),
                     static_cast<unsigned>(duplicates),
                     static_cast<unsigned>(buffer_.size()));
@@ -324,7 +339,7 @@ void NodeApp::service_events(uint32_t now_ms) {
     }
     case SendOutcome::kRejected:
       if (++rejected_attempts_ >= config::kMaxRejectedAttempts) {
-        Serial.printf("[events] batch rejected (%d) %u times, dropped\n",
+        Serial.printf("[events] batch rejected (%d) %u times, dropped\r\n",
                       result.status, static_cast<unsigned>(rejected_attempts_));
         buffer_.pop(count);
         rejected_attempts_ = 0;
@@ -341,7 +356,7 @@ void NodeApp::service_events(uint32_t now_ms) {
   }
   const uint32_t delay_ms = events_backoff_.next_delay_ms();
   next_events_ms_ = done_ms + delay_ms;
-  Serial.printf("[events] send failed (status %d), %u buffered, retry in %u ms\n",
+  Serial.printf("[events] send failed (status %d), %u buffered, retry in %u ms\r\n",
                 result.status, static_cast<unsigned>(buffer_.size()),
                 static_cast<unsigned>(delay_ms));
 }
@@ -498,7 +513,7 @@ bool NodeApp::simulate_bounce(uint8_t channel) {
       }
       delay(config::kSimBounceIntervalMs);
     }
-    Serial.printf("[debounce] ch%u: %u toggles in %u ms, accepted changes %u\n",
+    Serial.printf("[debounce] ch%u: %u toggles in %u ms, accepted changes %u\r\n",
                   channel, static_cast<unsigned>(config::kSimBounceToggles),
                   static_cast<unsigned>(config::kSimBounceToggles *
                                         config::kSimBounceIntervalMs),
