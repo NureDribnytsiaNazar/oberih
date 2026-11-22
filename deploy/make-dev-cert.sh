@@ -1,12 +1,12 @@
 #!/bin/sh
 # Самопідписаний TLS-сертифікат для локального розгортання (Nginx).
-# Використання: ./deploy/make-dev-cert.sh [ім'я ...]   (за замовчуванням localhost)
+# Використання: ./deploy/make-dev-cert.sh [ім'я ...]   (за замовчуванням localhost bore.pub)
 # Ключі в git не потрапляють (.gitignore).
 set -eu
 
 dir="$(cd "$(dirname "$0")" && pwd)/certs"
 mkdir -p "$dir"
-[ "$#" -eq 0 ] && set -- localhost
+[ "$#" -eq 0 ] && set -- localhost bore.pub
 san=""
 for name in "$@"; do
   san="${san}DNS:${name},"

@@ -6,10 +6,10 @@
   допомогою openssl у тимчасовому контейнері, тому окремо встановлювати
   openssl не потрібно. Ключі в git не потрапляють (.gitignore).
 .EXAMPLE
-  .\deploy\make-dev-cert.ps1
+  .\deploy\make-dev-cert.ps1          # localhost, bore.pub (тунель для вузла)
   .\deploy\make-dev-cert.ps1 -Names localhost, oberih.local
 #>
-param([string[]]$Names = @("localhost"))
+param([string[]]$Names = @("localhost", "bore.pub"))
 $ErrorActionPreference = "Stop"
 
 $certs = Join-Path $PSScriptRoot "certs"

@@ -6,10 +6,11 @@
 публічної HTTPS-адреси.
 
 ```
- Wokwi (ESP32) --HTTPS--> Cloudflare Quick Tunnel --HTTP--> 127.0.0.1:8081 ┐
- Браузер, PowerShell ---------------------HTTPS--> :443 (HTTP :80 -> 301) ─┤
-                                                                     nginx │
-                                    api:8000 (uvicorn, лише мережа compose) <┘
+ Wokwi (ESP32) --TLS усередині TCP--> bore.pub:<порт> --TCP--> :443 ┐
+ Браузер, PowerShell ------------------------HTTPS--> :443 (HTTP :80 -> 301) ─┤
+ (необов'язково) тунель, що сам завершує TLS --HTTP--> 127.0.0.1:8081 ─┤
+                                                                nginx │
+                               api:8000 (uvicorn, лише мережа compose) <┘
                                                     │
                                       db:5432 (лише мережа compose)
 ```
@@ -51,33 +52,39 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod exec `
 
 Якщо порти 80/443 зайняті: `.\deploy\init-env.ps1 -HttpPort 8080 -HttpsPort 8443`.
 
-Публічна адреса для вузла (один раз `winget install Cloudflare.cloudflared`):
+Публічна адреса для вузла — TCP-тунель **bore** (`bore.exe` з
+[github.com/ekzhang/bore/releases](https://github.com/ekzhang/bore/releases),
+архів `x86_64-pc-windows-msvc`). Тунель лише пересилає байти, TLS
+завершує наш Nginx (таймаут рукопожаття 60 с). Тунелі, що самі завершують
+TLS (Cloudflare Quick Tunnel), для вузла у Wokwi не годяться: вони рвуть
+рукопожаття через ~10 с, а ESP32 у симуляторі рахує його ~11 с (припущення
+50б). Сертифікат Nginx має містити ім'я `bore.pub` (`make-dev-cert.ps1` додає
+його за замовчуванням).
 
 ```powershell
-cloudflared tunnel --url http://localhost:8081
+& "$env:LOCALAPPDATA\Programs\bore\bore.exe" local 443 --to bore.pub   # або HTTPS_PORT
 ```
 
-Команда виводить `https://<слова>.trycloudflare.com`. TLS для вузла
-завершується в мережі Cloudflare, а до Nginx тунель іде через порт 8081 без
-редиректу, з тими самими лімітами й заголовками. Обмеження Quick Tunnel
-(документація Cloudflare, 2026): обліковий запис не потрібен; адреса
-змінюється з кожним запуском і перестає працювати після зупинки
-`cloudflared`; до 200 одночасних запитів, далі `429`; без гарантії
-доступності; призначено для тестування. Для постійної адреси —
-іменований тунель з обліковим записом Cloudflare або варіант B.
+Команда виводить `listening at bore.pub:<порт>`. Порт змінюється з кожним
+запуском; `bore.pub` — публічний сервер-хобі без гарантій доступності.
 
-Секрети вузла для нової адреси (токен, ключ команд, сертифікат-якір TLS
-тунелю). У розгортанні БД назовні не відкрита, тому скрипт виконується
-всередині контейнера `api`:
+Секрети вузла для цієї адреси (токен, ключ команд і сертифікат Nginx, якому
+довірятиме вузол). У розгортанні БД назовні не відкрита, тому скрипт
+виконується всередині контейнера `api`:
 
 ```powershell
 $C = "-f", "docker-compose.prod.yml", "--env-file", ".env.prod"
+docker compose @C cp deploy/certs/server.crt api:/data/nginx.crt
 docker compose @C exec api python -m scripts.provision_node `
-    --server-url https://<слова>.trycloudflare.com --output /data/secrets.h
+    --server-url https://bore.pub:<порт> --ca-file /data/nginx.crt --output /data/secrets.h
 docker compose @C cp api:/data/secrets.h iot/include/secrets.h
-docker compose @C exec api rm /data/secrets.h
+docker compose @C exec api rm /data/secrets.h /data/nginx.crt
 cd iot; pio run -e esp32dev
 ```
+
+Вхід `127.0.0.1:8081` (HTTP без редиректу) лишається для тунелів, що самі
+завершують TLS, наприклад `cloudflared tunnel --url http://localhost:8081`
+для доступу браузером; вузлу він не потрібен.
 
 ## Варіант B: VPS або хмарна ВМ
 

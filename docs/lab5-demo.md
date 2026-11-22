@@ -6,7 +6,7 @@
 бізнес-логіки; налаштування IoT-клієнта; взаємодію IoT-клієнта й сервера.
 Пункти 1–6 — блоки відео з таймкодами.
 
-Потрібні: Docker Desktop, `cloudflared`, PlatformIO, VS Code з Wokwi.
+Потрібні: Docker Desktop, `bore.exe` (TCP-тунель), PlatformIO, VS Code з Wokwi.
 Подробиці розгортання — [`deploy.md`](deploy.md).
 
 ## 1. Розгортання з нуля
@@ -15,7 +15,7 @@
 cd D:\ARK\oberih
 git switch lab5
 .\deploy\init-env.ps1                      # секрети в .env.prod (не в git)
-.\deploy\make-dev-cert.ps1                 # сертифікат Nginx
+.\deploy\make-dev-cert.ps1                 # сертифікат Nginx (localhost, bore.pub)
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 docker compose -f docker-compose.prod.yml --env-file .env.prod logs migrate   # 0001..0004, центр сертифікації
@@ -27,26 +27,43 @@ docker compose @C exec -e SEED_PASSWORD=Demo-Password-1 api python -m scripts.se
 Показати: чотири сервіси (`db`, `migrate` завершився, `api` і `nginx`
 healthy), smoke-тест 14/14 і `http://localhost` -> 301 на HTTPS.
 
-Окреме вікно — публічна адреса:
+Окреме вікно — публічна адреса. TCP-тунель bore пересилає байти на HTTPS
+Nginx, TLS завершує сам Nginx (тунелі, що завершують TLS самі, для вузла у
+Wokwi не годяться — припущення 50б):
 
 ```powershell
-cloudflared tunnel --url http://localhost:8081
+& "$env:LOCALAPPDATA\Programs\bore\bore.exe" local 443 --to bore.pub   # -> bore.pub:<порт>
 ```
 
-Секрети вузла для цієї адреси та збирання прошивки:
+Секрети вузла для цієї адреси (вузол довірятиме сертифікату Nginx) та
+збирання прошивки:
 
 ```powershell
-$Url = "https://<слова>.trycloudflare.com"
-docker compose @C exec api python -m scripts.provision_node --server-url $Url --output /data/secrets.h
+$Url = "https://bore.pub:<порт>"
+docker compose @C cp deploy/certs/server.crt api:/data/nginx.crt
+docker compose @C exec api python -m scripts.provision_node --server-url $Url --ca-file /data/nginx.crt --output /data/secrets.h
 docker compose @C cp api:/data/secrets.h iot/include/secrets.h
-docker compose @C exec api rm /data/secrets.h
+docker compose @C exec api rm /data/secrets.h /data/nginx.crt
 cd iot; pio run -e esp32dev; cd ..
 ```
 
-Допоміжні функції працюють через публічну адресу (сертифікат тунелю
-чинний, обхід перевірки не потрібен):
+Допоміжні функції працюють через публічну адресу. Windows PowerShell 5.1
+довіряє лише сертифікату нашого Nginx (перевірка за відбитком):
 
 ```powershell
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]12288
+Add-Type @"
+using System.Net; using System.Security.Cryptography.X509Certificates;
+public static class OberihPin {
+    public static string Thumb;
+    public static void Install(string thumb) {
+        Thumb = thumb;
+        ServicePointManager.ServerCertificateValidationCallback =
+            (s, c, ch, e) => c != null && c.GetCertHashString() == Thumb;
+    }
+}
+"@
+[OberihPin]::Install((New-Object Security.Cryptography.X509Certificates.X509Certificate2 "D:\ARK\oberih\deploy\certs\server.crt").Thumbprint)
 $B = "$Url/api/v1"
 $Pwd = "Demo-Password-1"
 function Api($Method, $Path, $Body = $null, $Headers = $H) {

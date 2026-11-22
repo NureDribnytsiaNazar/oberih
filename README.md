@@ -133,7 +133,7 @@ Simulator*. Перемикачі `1 Door`, `2 Window`, `4 Tamper` — конта
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 docker compose -f docker-compose.prod.yml --env-file .env.prod exec -e SEED_PASSWORD=Demo-Password-1 api python -m scripts.seed
 .\deploy\smoke-test.ps1 -BaseUrl https://localhost -Password Demo-Password-1 -SkipCertificateCheck
-cloudflared tunnel --url http://localhost:8081   # публічна HTTPS-адреса для вузла у Wokwi
+bore local 443 --to bore.pub   # публічна адреса bore.pub:<порт> для вузла у Wokwi (TLS — Nginx)
 ```
 
 Подробиці (варіанти локально/VPS, ліміти Nginx, резервне копіювання,
