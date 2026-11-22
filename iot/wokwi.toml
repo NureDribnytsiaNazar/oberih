@@ -1,7 +1,10 @@
 # Симуляція у Wokwi for VS Code: прошивка з `pio run -e esp32dev`.
-# Для режиму розробки без кореневого сертифіката замініть esp32dev на
+# Для режиму розробки без сертифіката-якоря замініть esp32dev на
 # esp32dev_devtls в обох шляхах.
 [wokwi]
 version = 1
 firmware = '.pio/build/esp32dev/firmware.bin'
 elf = '.pio/build/esp32dev/firmware.elf'
+# Serial вузла доступний також через TCP (RFC 2217) на localhost:4000:
+# журнал можна читати й команди консолі надсилати з PowerShell або скрипту.
+rfc2217ServerPort = 4000
