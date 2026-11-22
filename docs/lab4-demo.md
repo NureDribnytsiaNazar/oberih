@@ -7,7 +7,11 @@
 Потрібні три вікна PowerShell (сервер, тунель, команди) і VS Code з
 розширенням Wokwi. Вузол у Wokwi бачить лише публічні адреси інтернету
 (`host.wokwi.internal` працює тільки з платним приватним шлюзом), тому
-сервер відкривається через тимчасовий тунель Cloudflare.
+сервер відкривається через TCP-тунель **bore** (`bore.pub`). TLS завершує
+сам сервер (uvicorn із самопідписаним сертифікатом), а вузол довіряє саме
+цьому сертифікату. Тунель Cloudflare не підходить: він сам завершує TLS і
+рве рукопожаття з Wokwi приблизно через 10 с, а ESP32 у симуляторі рахує
+його ~11 с (припущення 50б).
 
 ## 0. Підготовка
 
@@ -23,40 +27,62 @@ alembic upgrade head
 python -m scripts.init_ca
 $env:SEED_PASSWORD = "Demo-Password-1"
 python -m scripts.seed
+python -m scripts.make_dev_cert --names bore.pub localhost   # server/certs/server.crt, .key
 ```
 
-Вікно 1 — сервер:
+Вікно 1 — сервер із TLS. `--timeout-keep-alive 120` не дає серверу
+закривати з'єднання вузла між heartbeat (30 с):
 
 ```powershell
 cd D:\ARK\oberih\server
 .venv\Scripts\Activate.ps1
-uvicorn app.main:app
+uvicorn app.main:app --port 8443 --ssl-keyfile certs\server.key --ssl-certfile certs\server.crt --timeout-keep-alive 120
 ```
 
-Вікно 2 — тунель (один раз: `winget install Cloudflare.cloudflared`). Команда
-виводить адресу `https://<випадкові-слова>.trycloudflare.com`:
+Вікно 2 — тунель. Один раз завантажте `bore.exe` з
+[github.com/ekzhang/bore/releases](https://github.com/ekzhang/bore/releases)
+(архів `x86_64-pc-windows-msvc`) у `%LOCALAPPDATA%\Programs\bore`. Команда
+виводить `listening at bore.pub:<порт>`:
 
 ```powershell
-cloudflared tunnel --url http://localhost:8000
+& "$env:LOCALAPPDATA\Programs\bore\bore.exe" local 8443 --to bore.pub
 ```
 
 Вікно 3 — секрети вузла і збирання прошивки. Скрипт видає демо-вузлу новий
-токен і ключ підпису команд, визначає сертифікат-якір TLS тунелю (видавця
-сертифіката тунелю, припущення 50) й записує
-все в `iot/include/secrets.h`:
+токен і ключ підпису команд і вписує в `iot/include/secrets.h` адресу та
+сертифікат сервера, якому довірятиме вузол:
 
 ```powershell
 cd D:\ARK\oberih\server
 .venv\Scripts\Activate.ps1
-python -m scripts.provision_node --server-url https://<адреса-тунелю>
+python -m scripts.provision_node --server-url https://bore.pub:<порт> --ca-file certs\server.crt
 cd ..\iot
 pio run -e esp32dev
 ```
 
+Порт bore змінюється з кожним запуском `bore.exe`; тоді повторіть
+`provision_node` і `pio run`. Сертифікат сервера перегенеровувати не треба.
+
 Допоміжні функції (у тому самому вікні 3):
 
 ```powershell
-$B = "http://localhost:8000/api/v1"
+# Windows PowerShell 5.1: TLS 1.2/1.3 і довіра лише сертифікату нашого
+# сервера (перевірка за відбитком; блок скрипту тут не працює, бо .NET
+# викликає перевірку з іншого потоку, тому — маленький клас C#).
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]12288
+Add-Type @"
+using System.Net; using System.Security.Cryptography.X509Certificates;
+public static class OberihPin {
+    public static string Thumb;
+    public static void Install(string thumb) {
+        Thumb = thumb;
+        ServicePointManager.ServerCertificateValidationCallback =
+            (s, c, ch, e) => c != null && c.GetCertHashString() == Thumb;
+    }
+}
+"@
+[OberihPin]::Install((New-Object Security.Cryptography.X509Certificates.X509Certificate2 "D:\ARK\oberih\server\certs\server.crt").Thumbprint)
+$B = "https://localhost:8443/api/v1"
 $Pwd = "Demo-Password-1"
 function Api($Method, $Path, $Body = $null, $Headers = $H) {
     $p = @{ Method = $Method; Uri = "$B$Path"; Headers = $Headers

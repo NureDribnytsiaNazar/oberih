@@ -9,6 +9,9 @@ setCACert на ESP32. За замовчуванням якір — безпос�
 підпис, і рукопожаття встигає в симуляторі Wokwi. --ca-level root вписує
 корінь (повна перевірка ланцюжка, для справжньої плати). --no-ca пропускає
 цей крок (тоді прошивку збирають у середовищі esp32dev_devtls).
+--ca-file вписує заданий сертифікат (наприклад, самопідписаний сертифікат
+сервера з scripts/make_dev_cert.py, коли TLS завершує сам сервер за
+TCP-тунелем bore).
 Файл не потрапляє в git (.gitignore). Скрипт працює напряму з БД, тому
 його запускає адміністратор на машині сервера.
 
@@ -74,6 +77,17 @@ def fetch_ca_cert(server_url: str, level: str = "issuer") -> str:
     return ssl.DER_cert_to_PEM_cert(anchor)
 
 
+def resolve_ca(
+    server_url: str, level: str, ca_file: Path | None, no_ca: bool
+) -> str | None:
+    """Сертифікат-якір: із файлу, з ланцюжка сервера або жодного."""
+    if no_ca:
+        return None
+    if ca_file is not None:
+        return ca_file.read_text(encoding="ascii")
+    return fetch_ca_cert(server_url, level)
+
+
 def c_string(text: str) -> str:
     """Багаторядковий текст як рядковий літерал C (рядки через \\n)."""
     lines = [f'  "{line}\\n"' for line in text.strip().splitlines()]
@@ -114,11 +128,14 @@ def main() -> None:
         help="якір довіри: видавець сертифіката сервера або корінь ланцюжка",
     )
     parser.add_argument(
+        "--ca-file", type=Path, help="PEM сертифіката-якоря замість визначення"
+    )
+    parser.add_argument(
         "--no-ca", action="store_true", help="не вписувати сертифікат-якір"
     )
     args = parser.parse_args()
     server_url = args.server_url.rstrip("/")
-    ca_cert = None if args.no_ca else fetch_ca_cert(server_url, args.ca_level)
+    ca_cert = resolve_ca(server_url, args.ca_level, args.ca_file, args.no_ca)
     with SessionLocal() as db:
         node, token, key = provision(db, args.serial)
         content = render_secrets(node, token, key, server_url, ca_cert)

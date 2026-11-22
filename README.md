@@ -88,17 +88,21 @@ uvicorn app.main:app --reload
 License*).
 
 ```powershell
-# 1. Секрети вузла: новий токен і ключ підпису команд демо-вузла, адреса
-#    сервера та сертифікат-якір TLS -> iot/include/secrets.h (не комітиться).
-#    Wokwi бачить лише публічні адреси, тому сервер має бути за тунелем (ЛБ5).
+# 1. Сервер із TLS за TCP-тунелем bore (Wokwi бачить лише публічні адреси;
+#    докладно — docs/lab4-demo.md, розділ 0, і припущення 50б).
 cd server
-python -m scripts.provision_node --server-url https://<адреса-тунелю>
+python -m scripts.make_dev_cert --names bore.pub localhost
+uvicorn app.main:app --port 8443 --ssl-keyfile certs\server.key --ssl-certfile certs\server.crt --timeout-keep-alive 120
+#    в іншому вікні: bore local 8443 --to bore.pub  -> bore.pub:<порт>
+# 2. Секрети вузла: новий токен і ключ підпису команд, адреса й сертифікат
+#    сервера -> iot/include/secrets.h (не комітиться).
+python -m scripts.provision_node --server-url https://bore.pub:<порт> --ca-file certs\server.crt
 cd ..\iot
 
-# 2. Юніт-тести логіки на ПК
+# 3. Юніт-тести логіки на ПК
 pio test -e native
 
-# 3. Збирання прошивки для симуляції
+# 4. Збирання прошивки для симуляції
 pio run -e esp32dev
 ```
 
