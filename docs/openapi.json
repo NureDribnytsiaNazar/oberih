@@ -7617,7 +7617,7 @@
           "config_version"
         ],
         "title": "NodeConfigOut",
-        "description": "Конфігурація вузла; застосовується, якщо config_version більша за чинну."
+        "description": "Конфігурація вузла (вміст команди set_config; у heartbeat — довідково)."
       },
       "NodeCreate": {
         "properties": {

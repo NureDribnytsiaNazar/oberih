@@ -12,6 +12,7 @@ from app.models.devices import Node, NodeCommand
 from app.models.enums import CommandStatus, FacilityMode
 from app.schemas.events import HeartbeatIn
 from app.services import commands, device as device_service
+from app.services.retention import purge_expired_data
 from tests.conftest import API, confirmation
 
 
@@ -165,20 +166,33 @@ def test_node_settings_bump_config_version(
     device: dict[str, Any],
 ) -> None:
     url = f"{API}/facilities/{facility_id}/nodes/{device['node_id']}"
+    initial = client.get(url, headers=owner).json()["config_version"]
     response = client.patch(url, json={"debounce_ms": 80}, headers=owner)
     assert response.status_code == 200, response.text
-    assert response.json()["config_version"] == 2
+    assert response.json()["config_version"] == initial + 1
 
     body = _heartbeat(client, device)
     assert body["config"]["debounce_ms"] == 80
-    assert body["config"]["config_version"] == 2
+    assert body["config"]["config_version"] == initial + 1
     [command] = body["commands"]
     assert command["type"] == "set_config"
     assert '"debounce_ms":80' in command["payload"]
 
     # Перейменування не змінює конфігурації вузла.
     renamed = client.patch(url, json={"name": "Передпокій"}, headers=owner)
-    assert renamed.json()["config_version"] == 2
+    assert renamed.json()["config_version"] == initial + 1
+
+
+def test_commission_sets_config_version_from_clock(
+    client: TestClient,
+    owner: dict[str, str],
+    facility_id: str,
+    device: dict[str, Any],
+) -> None:
+    """Після очищення БД версія не почнеться з 1 і вузол прийме конфігурацію."""
+    url = f"{API}/facilities/{facility_id}/nodes/{device['node_id']}"
+    version = client.get(url, headers=owner).json()["config_version"]
+    assert version >= int(datetime.now(UTC).timestamp()) - 60
 
 
 def test_node_settings_bounds(
@@ -200,13 +214,14 @@ def test_facility_settings_bump_config_version(
     device: dict[str, Any],
 ) -> None:
     url = f"{API}/facilities/{facility_id}/settings"
+    initial = _heartbeat(client, device)["config"]["config_version"]
     client.put(url, json={"far_window_days": 10}, headers=owner)
-    assert _heartbeat(client, device)["config"]["config_version"] == 1
+    assert _heartbeat(client, device)["config"]["config_version"] == initial
 
     client.put(url, json={"exit_delay_s": 20}, headers=owner)
     body = _heartbeat(client, device)
     assert body["config"]["exit_delay_s"] == 20
-    assert body["config"]["config_version"] == 2
+    assert body["config"]["config_version"] == initial + 1
 
 
 def test_old_heartbeat_is_compatible(
@@ -222,6 +237,7 @@ def test_old_heartbeat_is_compatible(
 
 def test_mode_reconciled_after_offline_work(
     client: TestClient,
+    db: Session,
     owner: dict[str, str],
     facility_id: str,
     device: dict[str, Any],
@@ -233,13 +249,57 @@ def test_mode_reconciled_after_offline_work(
     # У буфері ще є події: розбіжність може бути недоставленою тривогою.
     busy = _heartbeat(client, device, mode="disarmed", buffer_depth=2)
     assert busy["commands"] == []
+    # Ту саму команду вузол щойно підтвердив, але режим не змінився
+    # (наприклад, відхилив підпис): повтор не створюється одразу.
+    soon = _heartbeat(client, device, mode="disarmed", buffer_depth=0)
+    assert soon["commands"] == []
 
-    synced = _heartbeat(client, device, mode="disarmed", buffer_depth=0)
-    [command] = synced["commands"]
-    assert command["type"] == "arm_home"
+    node = db.get_one(Node, uuid.UUID(device["node_id"]))
+    later = datetime.now(UTC) + commands.RECONCILE_RETRY + timedelta(seconds=1)
+    report = HeartbeatIn(mode=FacilityMode.DISARMED, buffer_depth=0)
+    [command] = device_service.heartbeat(db, node, report, now=later).commands
+    assert command.type.value == "arm_home"
     # Поки команда відкрита, нова не створюється.
-    repeat = _heartbeat(client, device, mode="disarmed", buffer_depth=0)
-    assert [c["id"] for c in repeat["commands"]] == [command["id"]]
+    again = device_service.heartbeat(db, node, report, now=later).commands
+    assert [c.id for c in again] == [command.id]
+
+
+def test_stale_node_config_is_resent_as_signed_command(
+    client: TestClient,
+    device: dict[str, Any],
+) -> None:
+    """Вузол із чистою NVS (версія 0) отримує підписану set_config."""
+    [command] = _heartbeat(client, device, config_version=0)["commands"]
+    assert command["type"] == "set_config"
+    key = bytes.fromhex(device["command_key"])
+    assert commands.verify(
+        key, _signing_string(device["node_id"], command), command["signature"]
+    )
+    # Відкрита команда не дублюється; після підтвердження — теж (вікно повтору).
+    again = _heartbeat(client, device, config_version=0)["commands"]
+    assert [c["id"] for c in again] == [command["id"]]
+    acked = _heartbeat(
+        client, device, config_version=0, acked_command_ids=[command["id"]]
+    )
+    assert acked["commands"] == []
+
+
+def test_finished_commands_are_purged_after_retention(
+    client: TestClient,
+    db: Session,
+    owner: dict[str, str],
+    facility_id: str,
+    device: dict[str, Any],
+) -> None:
+    _arm(client, owner, facility_id)
+    [queued] = _heartbeat(client, device)["commands"]
+    _heartbeat(client, device, acked_command_ids=[queued["id"]])
+
+    later = datetime.now(UTC) + timedelta(days=31)
+    report = purge_expired_data(db, later)
+
+    assert report.commands == 1
+    assert db.scalars(select(NodeCommand)).all() == []
 
 
 def test_reconcile_ignores_equivalent_modes() -> None:
@@ -260,3 +320,31 @@ def test_owner_sees_command_queue(
     assert command["status"] == "pending"
     _heartbeat(client, device)
     assert client.get(url, headers=owner).json()[0]["status"] == "delivered"
+
+
+def test_resolving_last_alarm_sends_disarm_to_node(
+    client: TestClient,
+    owner: dict[str, str],
+    facility_id: str,
+    device: dict[str, Any],
+) -> None:
+    occurred = datetime.now(UTC).isoformat()
+    tamper = {
+        "events": [
+            {"channel": 3, "event_type": "tamper", "seq": 1, "occurred_at": occurred}
+        ]
+    }
+    client.post(f"{API}/device/events", json=tamper, headers=device["headers"])
+    alarms = client.get(
+        f"{API}/facilities/{facility_id}/alarms",
+        params={"status": "open"},
+        headers=owner,
+    ).json()["items"]
+    body = {"action": "resolve", "confirmation": confirmation()}
+    response = client.post(
+        f"{API}/alarms/{alarms[0]['id']}/acknowledge", json=body, headers=owner
+    )
+    assert response.status_code == 200, response.text
+
+    [command] = _heartbeat(client, device)["commands"]
+    assert command["type"] == "disarm"

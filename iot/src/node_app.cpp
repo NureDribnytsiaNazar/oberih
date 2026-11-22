@@ -285,13 +285,11 @@ void NodeApp::heartbeat_succeeded(const HeartbeatReply& reply,
   missed_polls_ = 0;
   heartbeat_backoff_.reset();
   next_heartbeat_ms_ = now_ms + settings_.poll_interval_s * kMsPerSecond;
-  // Спершу підписані команди (основний шлях), потім поле config — запасний
-  // шлях для вузла, що пропустив команду set_config (строк дії 60 с минув).
+  // Конфігурація застосовується лише з підписаної команди set_config (ІК-7).
+  // Поле config відповіді не використовується: якщо вузол пропустив команду,
+  // сервер за config_version із heartbeat надсилає її повторно.
   for (const Command& command : reply.commands) {
     process_command(command, now_ms);
-  }
-  if (reply.has_config) {
-    apply_server_settings(reply.config, "heartbeat");
   }
   if (machine_.mode() != reported_mode_ ||
       reply.facility_mode != mode_name(machine_.mode())) {

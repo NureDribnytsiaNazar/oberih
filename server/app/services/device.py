@@ -32,8 +32,9 @@ def heartbeat(
 ) -> HeartbeatOut:
     """Службове повідомлення: вузол на зв'язку.
 
-    Порядок: підтвердження отриманих команд, узгодження режиму, видача
-    відкритих команд і поточної конфігурації вузла.
+    Порядок: підтвердження отриманих команд, узгодження режиму й версії
+    конфігурації, видача відкритих команд. Поле config у відповіді лише
+    довідкове: вузол застосовує конфігурацію тільки з підписаної set_config.
     """
     now = now or datetime.now(UTC)
     nodes.mark_seen(db, node, now)
@@ -44,6 +45,7 @@ def heartbeat(
     commands.acknowledge(db, node, data.acked_command_ids, now)
     report = commands.NodeReport(mode=data.mode, buffer_depth=data.buffer_depth)
     commands.reconcile_mode(db, node, facility, report, now)
+    commands.reconcile_config(db, node, facility, data.config_version, now)
     pending = commands.deliver(db, node, now)
     config = commands.node_config(node, facility.settings)
     db.commit()

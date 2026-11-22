@@ -27,6 +27,9 @@ from app.models.facilities import Facility, FacilitySettings
 from app.schemas.events import NodeCommandOut, NodeConfigOut
 
 COMMAND_TTL = timedelta(seconds=60)
+# Якщо вузол отримав таку саму команду узгодження нещодавно, але стан не
+# змінився (наприклад, вузол відхиляє підпис), повтор не створюється.
+RECONCILE_RETRY = timedelta(minutes=5)
 COMMAND_KEY_BYTES = 32
 
 # Режим сервера -> команда, що приводить до нього вузол. Затримку входу й
@@ -113,6 +116,9 @@ def enqueue(
     if node.command_key is None:
         return None
     now = now or datetime.now(UTC)
+    # Блокування рядка вузла: паралельні запити (дія користувача й heartbeat)
+    # обчислюють nonce по черзі й не порушують унікальність (node_id, nonce).
+    db.execute(select(Node.id).where(Node.id == node.id).with_for_update())
     last = db.scalar(
         select(func.max(NodeCommand.nonce)).where(NodeCommand.node_id == node.id)
     )
@@ -160,6 +166,15 @@ def config_changed(
         node.config_version += 1
         config = node_config(node, facility.settings)
         enqueue(db, node, CommandType.SET_CONFIG, config.model_dump())
+
+
+def renew_config_version(node: Node, now: datetime) -> None:
+    """Версія конфігурації після (повторного) введення вузла в експлуатацію.
+
+    Не менша за поточний час Unix: після очищення чи відновлення БД сервера
+    вузол, що зберігає в NVS більшу стару версію, знову приймає конфігурацію.
+    """
+    node.config_version = max(node.config_version + 1, int(now.timestamp()))
 
 
 def node_config(node: Node, settings: FacilitySettings) -> NodeConfigOut:
@@ -210,7 +225,36 @@ def reconcile_mode(
     if _open_commands(db, node, now):
         return None
     command_type = MODE_COMMANDS[facility.mode]
-    return enqueue(db, node, command_type, {"mode": facility.mode.value}, now)
+    payload = {"mode": facility.mode.value}
+    if _recently_sent(db, node, command_type, payload, now):
+        return None
+    return enqueue(db, node, command_type, payload, now)
+
+
+def reconcile_config(
+    db: Session,
+    node: Node,
+    facility: Facility,
+    reported_version: int | None,
+    now: datetime,
+) -> NodeCommand | None:
+    """Повторна підписана set_config для вузла з застарілою конфігурацією.
+
+    Вузол застосовує конфігурацію лише з підписаної команди (ІК-7), тому,
+    якщо він пропустив set_config (строк дії минув, NVS очищено), сервер
+    надсилає її знову за версією з heartbeat.
+    """
+    if reported_version is None or reported_version >= node.config_version:
+        return None
+    if any(
+        command.command_type == CommandType.SET_CONFIG
+        for command in _open_commands(db, node, now)
+    ):
+        return None
+    payload = node_config(node, facility.settings).model_dump()
+    if _recently_sent(db, node, CommandType.SET_CONFIG, payload, now):
+        return None
+    return enqueue(db, node, CommandType.SET_CONFIG, payload, now)
 
 
 def deliver(db: Session, node: Node, now: datetime) -> list[NodeCommandOut]:
@@ -244,6 +288,27 @@ def list_commands(db: Session, node: Node, limit: int = 50) -> list[NodeCommand]
         .limit(limit)
     )
     return list(db.scalars(stmt))
+
+
+def _recently_sent(
+    db: Session,
+    node: Node,
+    command_type: CommandType,
+    payload: dict[str, Any],
+    now: datetime,
+) -> bool:
+    """Чи видавалася вузлу така сама команда протягом RECONCILE_RETRY."""
+    latest = db.scalars(
+        select(NodeCommand)
+        .where(
+            NodeCommand.node_id == node.id,
+            NodeCommand.command_type == command_type,
+            NodeCommand.issued_at > now - RECONCILE_RETRY,
+        )
+        .order_by(NodeCommand.nonce.desc())
+        .limit(1)
+    ).first()
+    return latest is not None and latest.payload == payload
 
 
 def _open_commands(db: Session, node: Node, now: datetime) -> list[NodeCommand]:
