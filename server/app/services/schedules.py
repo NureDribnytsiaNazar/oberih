@@ -7,7 +7,7 @@
 """
 
 import uuid
-from datetime import datetime, time, timedelta
+from datetime import UTC, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -85,13 +85,17 @@ def due_moment(
     пізніше now і не старшим за CATCH_UP_WINDOW.
     """
     zone = ZoneInfo(timezone)
-    local_now = now.astimezone(zone)
+    now_utc = now.astimezone(UTC)
+    local_today = now_utc.astimezone(zone).date()
     for days_back in (0, 1):
-        day = local_now.date() - timedelta(days=days_back)
-        moment = datetime.combine(day, local_time_of_day, tzinfo=zone)
-        if moment > local_now or not days_mask & (1 << day.weekday()):
+        day = local_today - timedelta(days=days_back)
+        # Порівнюємо в UTC: різниця двох дат з однаковим ZoneInfo рахується
+        # «за настінним годинником» і помиляється в дні переведення годинника.
+        # Неіснуючий час (весняний перехід) за PEP 495 настає на годину пізніше.
+        moment = datetime.combine(day, local_time_of_day, tzinfo=zone).astimezone(UTC)
+        if moment > now_utc or not days_mask & (1 << day.weekday()):
             continue
-        if local_now - moment > CATCH_UP_WINDOW:
+        if now_utc - moment > CATCH_UP_WINDOW:
             return None
         if last_run_at is not None and last_run_at >= moment:
             return None

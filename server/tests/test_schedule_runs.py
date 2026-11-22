@@ -128,3 +128,25 @@ def test_arm_schedule_when_already_armed_is_skipped(
     assert process_timers(db, MONDAY_0900_KYIV).schedules == 0
     db.refresh(facility)
     assert facility.mode == FacilityMode.ARMED_HOME
+
+
+def test_spring_forward_gap_time_still_runs() -> None:
+    """28.03.2027 у Києві 03:00 -> 04:00: розклад на 03:30 не губиться.
+
+    Неіснуючий час 03:30 (за PEP 495 — зі старим зсувом UTC+2) настає о
+    04:30 нового часу, тобто запуск зсувається на годину, а не зникає.
+    """
+    at_0405 = datetime(2027, 3, 28, 1, 5, tzinfo=UTC)
+    assert due_moment(time(3, 30), ALL_DAYS, KYIV, None, at_0405) is None
+    at_0435 = datetime(2027, 3, 28, 1, 35, tzinfo=UTC)
+    moment = due_moment(time(3, 30), ALL_DAYS, KYIV, None, at_0435)
+    assert moment == datetime(2027, 3, 28, 1, 30, tzinfo=UTC)
+
+
+def test_fall_back_day_uses_real_elapsed_time() -> None:
+    """31.10.2027 у Києві 04:00 -> 03:00: вікно рахується в реальному часі."""
+    # 03:30 першого проходу (UTC+3) = 00:30 UTC; через 70 хв уже поза вікном.
+    first = datetime(2027, 10, 31, 0, 30, tzinfo=UTC)
+    assert due_moment(time(3, 30), ALL_DAYS, KYIV, None, first) is not None
+    later = first + timedelta(minutes=70)
+    assert due_moment(time(3, 30), ALL_DAYS, KYIV, first, later) is None
