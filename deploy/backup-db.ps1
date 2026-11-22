@@ -22,6 +22,16 @@ $compose = @("compose", "-f", (Join-Path $root "docker-compose.prod.yml"),
              "--env-file", (Join-Path $root ".env.prod"))
 $dir = Join-Path $PSScriptRoot "backups"
 New-Item -ItemType Directory -Force $dir | Out-Null
+
+# Користувач і назва БД — з .env.prod (як у docker-compose.prod.yml).
+function Get-EnvValue([string]$Name, [string]$Default) {
+    $line = Get-Content (Join-Path $root ".env.prod") -Encoding UTF8 |
+        Where-Object { $_ -match "^$Name=(.+)$" } | Select-Object -First 1
+    if ($line -and $line -match "^$Name=(.+)$") { return $Matches[1].Trim() }
+    return $Default
+}
+$DbUser = Get-EnvValue "POSTGRES_USER" "oberih"
+$DbName = Get-EnvValue "POSTGRES_DB" "oberih"
 $tables = "users", "facilities", "nodes", "sensors", "events", "alarms", "node_commands"
 
 function Invoke-Db([string[]]$Arguments) {
@@ -31,7 +41,7 @@ function Invoke-Db([string[]]$Arguments) {
 
 function Get-Counts([string]$Database) {
     $query = ($tables | ForEach-Object { "SELECT '$_', count(*) FROM $_" }) -join " UNION ALL "
-    Invoke-Db @("psql", "-U", "oberih", "-d", $Database, "-At", "-c", $query)
+    Invoke-Db @("psql", "-U", $DbUser, "-d", $Database, "-At", "-c", $query)
 }
 
 function Resolve-Dump {
@@ -44,7 +54,7 @@ function Resolve-Dump {
 switch ($Action) {
     "backup" {
         $target = Join-Path $dir ("oberih-{0}.dump" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
-        Invoke-Db @("pg_dump", "-U", "oberih", "-d", "oberih", "-Fc", "-f", "/tmp/oberih.dump")
+        Invoke-Db @("pg_dump", "-U", $DbUser, "-d", $DbName, "-Fc", "-f", "/tmp/oberih.dump")
         & docker @compose cp db:/tmp/oberih.dump $target
         if ($LASTEXITCODE -ne 0) { throw "Не вдалося скопіювати копію з контейнера" }
         Write-Host "Копію збережено: $target"
@@ -52,23 +62,23 @@ switch ($Action) {
     "verify" {
         $dump = Resolve-Dump
         & docker @compose cp $dump db:/tmp/check.dump
-        Invoke-Db @("dropdb", "-U", "oberih", "--if-exists", "oberih_restore_check")
-        Invoke-Db @("createdb", "-U", "oberih", "oberih_restore_check")
+        Invoke-Db @("dropdb", "-U", $DbUser, "--if-exists", "oberih_restore_check")
+        Invoke-Db @("createdb", "-U", $DbUser, "oberih_restore_check")
         try {
-            Invoke-Db @("pg_restore", "-U", "oberih", "-d", "oberih_restore_check", "--no-owner", "/tmp/check.dump")
-            $live = Get-Counts "oberih"
+            Invoke-Db @("pg_restore", "-U", $DbUser, "-d", "oberih_restore_check", "--no-owner", "/tmp/check.dump")
+            $live = Get-Counts $DbName
             $restored = Get-Counts "oberih_restore_check"
             Write-Host "Таблиця|рядків у робочій БД / у відновленій копії:"
             for ($i = 0; $i -lt $live.Count; $i++) { Write-Host "  $($live[$i])  /  $($restored[$i])" }
             Write-Host "Відновлення з $dump перевірено."
         } finally {
-            Invoke-Db @("dropdb", "-U", "oberih", "--if-exists", "oberih_restore_check")
+            Invoke-Db @("dropdb", "-U", $DbUser, "--if-exists", "oberih_restore_check")
         }
     }
     "restore" {
         $dump = Resolve-Dump
         & docker @compose cp $dump db:/tmp/restore.dump
-        Invoke-Db @("pg_restore", "-U", "oberih", "-d", "oberih", "--clean", "--if-exists", "--no-owner", "/tmp/restore.dump")
+        Invoke-Db @("pg_restore", "-U", $DbUser, "-d", $DbName, "--clean", "--if-exists", "--no-owner", "/tmp/restore.dump")
         Write-Host "Робочу БД відновлено з $dump. Запустіть api: docker compose ... up -d api"
     }
 }
