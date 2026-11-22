@@ -473,6 +473,8 @@ std::string NodeApp::status() {
   text += "config version: " + std::to_string(settings_.config_version) +
           ", last nonce " + std::to_string(last_nonce_) + "\n";
   text += "storage errors: " + std::to_string(buffer_.storage_errors()) + "\n";
+  text += "tls handshakes: " + std::to_string(net_.handshakes()) +
+          ", last request " + std::to_string(net_.last_duration_ms()) + " ms\n";
   return text;
 }
 
@@ -494,6 +496,7 @@ void NodeApp::set_network_enabled(bool enabled) {
     next_wifi_attempt_ms_ = millis();
     next_heartbeat_ms_ = millis();
   } else {
+    net_.disconnect();
     WiFi.disconnect();
   }
 }
