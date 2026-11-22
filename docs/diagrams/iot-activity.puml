@@ -51,7 +51,7 @@ repeat
     :POST /device/heartbeat: режим, config_version,\nbuffer_depth, acked_command_ids;
     if (Відповідь 2xx?) then (так)
       :NodeClock::sync(server_epoch);\nadopt_server_seq(last_seq);\nmissed_polls = 0;
-      repeat :Наступна підписана команда;
+      repeat :Наступна підписана команда\n(конфігурація — лише через set_config);
         :CommandVerifier::verify():\nHMAC (сталий час), |now − issued_at| <= 60 c,\nnonce > останнього;
         if (accepted?) then (так)
           :execute_command(): ModeMachine::force()\nабо set_config; nonce -> NVS;
@@ -60,7 +60,6 @@ repeat
         endif
         :id -> acked_command_ids\n(у наступному heartbeat);
       repeat while (Ще команди?) is (так)
-      :apply_server_config(config) — запасний шлях\n(якщо set_config пропущено), лише більша версія;
     else (ні)
       :missed_polls++; затримка Backoff;
       if (missed_polls >= 3?) then (так)

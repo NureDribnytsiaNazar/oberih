@@ -32,7 +32,7 @@ Commands -> Db : status = delivered, delivered_at
 Commands --> Heartbeat : команди з підписом\nHMAC-SHA256(command_key, "node|nonce|type|payload|issued_at")
 Heartbeat --> Node : {server_epoch, facility_mode, config, commands[]}
 Node -> Node : NodeClock::sync(server_epoch)
-note right of Node : спершу команди,\nпотім поле config —\nзапасний шлях
+note right of Node : конфігурація — лише\nпідписаною set_config;\nполе config довідкове
 Node -> Verifier : verify(command, clock, last_nonce)
 alt підпис, час і nonce правильні
   Verifier --> Node : accepted
