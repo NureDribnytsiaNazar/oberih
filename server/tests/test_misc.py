@@ -85,3 +85,22 @@ def test_timer_pass_skipped_when_another_instance_holds_lock(
         other.execute(select(func.pg_advisory_unlock(TIMERS_LOCK_KEY)))
         other.commit()
     assert run_once(db, now, purge=False) is True
+
+
+def test_purge_skipped_when_another_instance_holds_lock(
+    db: Session, engine: Engine, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Очищення даних, як і таймери, виконує лише власник блокування."""
+    calls: list[datetime] = []
+    monkeypatch.setattr(
+        "app.worker.purge_expired_data", lambda _db, now: calls.append(now)
+    )
+    now = datetime.now(UTC)
+    with engine.connect() as other:
+        other.execute(select(func.pg_advisory_lock(TIMERS_LOCK_KEY)))
+        assert run_once(db, now, purge=True) is False
+        other.execute(select(func.pg_advisory_unlock(TIMERS_LOCK_KEY)))
+        other.commit()
+    assert calls == []
+    assert run_once(db, now, purge=True) is True
+    assert calls == [now]

@@ -25,19 +25,19 @@ TIMERS_LOCK_KEY = 0x0BE21C
 def run_once(db: Session, now: datetime, purge: bool) -> bool:
     """Один прохід: таймери та, за потреби, очищення даних.
 
-    Таймери виконуються під pg_try_advisory_xact_lock: якщо запущено кілька
-    екземплярів api, прохід виконає лише один (блокування знімається під час
-    фіксації транзакції в process_timers). Повертає False, якщо прохід
-    таймерів пропущено, бо блокування тримає інший екземпляр.
+    Прохід виконується під pg_try_advisory_xact_lock: якщо запущено кілька
+    екземплярів api, таймери й очищення даних виконає лише той, хто отримав
+    блокування (воно знімається під час фіксації транзакції в
+    process_timers). Повертає False, якщо прохід пропущено.
     """
     locked = db.scalar(select(func.pg_try_advisory_xact_lock(TIMERS_LOCK_KEY)))
-    if locked:
-        process_timers(db, now)
-    else:
+    if not locked:
         db.rollback()
+        return False
+    process_timers(db, now)
     if purge:
         purge_expired_data(db, now)
-    return bool(locked)
+    return True
 
 
 def _run_once_in_session(now: datetime, purge: bool) -> None:
