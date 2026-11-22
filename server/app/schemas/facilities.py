@@ -280,3 +280,6 @@ class ScheduleOut(ORMModel):
     days_mask: int
     local_time: time
     enabled: bool
+    last_run_at: datetime | None = Field(
+        default=None, description="Останній виконаний запуск (UTC)"
+    )

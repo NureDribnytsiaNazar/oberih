@@ -167,6 +167,9 @@ class Schedule(UUIDPrimaryKeyMixin, Base):
     days_mask: Mapped[int] = mapped_column(SmallInteger)
     local_time: Mapped[time] = mapped_column(Time)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Момент (UTC), для якого розклад востаннє спрацював: не дає виконати
+    # той самий запуск двічі.
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class NotificationSetting(UUIDPrimaryKeyMixin, Base):

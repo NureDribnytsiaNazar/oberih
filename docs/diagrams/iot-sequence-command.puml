@@ -25,13 +25,14 @@ Api --> User : 200 {mode: disarmed}
 
 ... до 30 с (poll_interval_s) ...
 
-Node -> Heartbeat : POST {mode, config_version,\nbuffer_depth, acked_command_ids: []}
+Node -> Heartbeat : POST {mode, config_version,\nbuffer_depth, acked_command_ids: []}\n(те саме з'єднання TLS, keep-alive)
 Heartbeat -> Commands : acknowledge(); reconcile_mode()
 Heartbeat -> Commands : deliver(): прострочені -> expired
 Commands -> Db : status = delivered, delivered_at
 Commands --> Heartbeat : команди з підписом\nHMAC-SHA256(command_key, "node|nonce|type|payload|issued_at")
 Heartbeat --> Node : {server_epoch, facility_mode, config, commands[]}
 Node -> Node : NodeClock::sync(server_epoch)
+note right of Node : спершу команди,\nпотім поле config —\nзапасний шлях
 Node -> Verifier : verify(command, clock, last_nonce)
 alt підпис, час і nonce правильні
   Verifier --> Node : accepted

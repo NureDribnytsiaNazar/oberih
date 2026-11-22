@@ -1,4 +1,4 @@
-"""Таймери: затримки виходу й входу, недоступність вузлів, строк дії сертифікатів.
+"""Таймери: затримки виходу й входу, розклади, недоступність вузлів, сертифікати.
 
 process_timers() — єдина синхронна функція, яку фоновий виконавець
 викликає кожні WORKER_INTERVAL_S секунд. Годинник передається параметром
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.models.enums import FacilityMode
 from app.models.facilities import Facility
-from app.services import arming, certificates, nodes
+from app.services import arming, certificates, nodes, schedules
 from app.services.state_machine import ModeTrigger
 
 DELAY_MODES = (FacilityMode.EXIT_DELAY, FacilityMode.ENTRY_DELAY)
@@ -27,6 +27,7 @@ class TimerReport:
     alarms: int = 0  # entry_delay -> alarm
     offline_nodes: int = 0
     expired_certificates: int = 0
+    schedules: int = 0  # змін режиму за розкладом
 
 
 def process_timers(db: Session, now: datetime) -> TimerReport:
@@ -39,6 +40,7 @@ def process_timers(db: Session, now: datetime) -> TimerReport:
             report.armed += 1
         elif trigger == ModeTrigger.ENTRY_DELAY_EXPIRED:
             report.alarms += 1
+    report.schedules = schedules.run_due_schedules(db, now)
     report.offline_nodes = nodes.detect_offline(db, now)
     report.expired_certificates = certificates.mark_expired(db, now)
     db.commit()
