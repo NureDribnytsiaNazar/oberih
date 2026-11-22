@@ -177,7 +177,7 @@ class NodeCommandOut(BaseModel):
 
 
 class NodeConfigOut(BaseModel):
-    """Конфігурація вузла; застосовується, якщо config_version більша за чинну."""
+    """Конфігурація вузла (вміст команди set_config; у heartbeat — довідково)."""
 
     exit_delay_s: int
     entry_delay_s: int

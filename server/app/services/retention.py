@@ -6,13 +6,14 @@
 """
 
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import ColumnElement, Select, delete, func, literal, select
 from sqlalchemy.orm import Session
 
-from app.models.enums import AlarmStatus
+from app.models.devices import NodeCommand
+from app.models.enums import AlarmStatus, CommandStatus
 from app.models.events import Alarm, Event
 from app.models.facilities import Facility
 from app.models.users import TariffPlan, User
@@ -20,6 +21,9 @@ from app.services import audit
 
 BATCH_SIZE = 1000
 CLOSED_ALARM_STATUSES = (AlarmStatus.RESOLVED, AlarmStatus.CANCELLED)
+# Доставлені й прострочені команди вузлам зберігаються 30 днів.
+COMMAND_RETENTION = timedelta(days=30)
+FINISHED_COMMAND_STATUSES = (CommandStatus.ACKED, CommandStatus.EXPIRED)
 
 
 @dataclass
@@ -28,6 +32,7 @@ class PurgeReport:
 
     alarms: int = 0
     events: int = 0
+    commands: int = 0
 
 
 def purge_expired_data(
@@ -48,6 +53,11 @@ def purge_expired_data(
         Event.occurred_at < _cutoff(now)
     )
     report.events = _delete_in_batches(db, Event, expired_events, batch_size)
+    finished_commands = select(NodeCommand.id).where(
+        NodeCommand.issued_at < now - COMMAND_RETENTION,
+        NodeCommand.status.in_(FINISHED_COMMAND_STATUSES),
+    )
+    report.commands = _delete_in_batches(db, NodeCommand, finished_commands, batch_size)
     audit.record(db, actor_id, "data.purge", details=asdict(report))
     db.commit()
     return report

@@ -51,6 +51,7 @@ def provision(db: Session, serial: str) -> tuple[Node, str, bytes]:
     node.device_token_hash = hash_token(token)
     node.command_key = key
     node.commissioned_at = datetime.now(UTC)
+    commands.renew_config_version(node, node.commissioned_at)
     node.status = NodeStatus.PROVISIONING
     audit.record(db, None, "node.commission", "node", node.id, {"via": "script"})
     db.commit()
@@ -71,6 +72,10 @@ def fetch_ca_cert(server_url: str, level: str = "issuer") -> str:
     address = (host, parts.port or HTTPS_PORT)
     with socket.create_connection(address, timeout=CONNECT_TIMEOUT_S) as raw:
         with context.wrap_socket(raw, server_hostname=host) as tls:
+            if not hasattr(tls, "get_verified_chain"):
+                raise SystemExit(
+                    "Потрібен Python 3.13+ (get_verified_chain) або --ca-file / --no-ca"
+                )
             chain = tls.get_verified_chain()
     # SSLSocket повертає ланцюжок як список сертифікатів у форматі DER.
     anchor = chain[1] if level == "issuer" and len(chain) > 1 else chain[-1]

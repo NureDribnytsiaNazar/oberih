@@ -129,6 +129,7 @@ def commission_node(
     node.device_token_hash = hash_token(token)
     node.command_key = command_key
     node.commissioned_at = datetime.now(UTC)
+    commands.renew_config_version(node, node.commissioned_at)
     node.status = NodeStatus.PROVISIONING
     audit.record(db, actor.id, "node.commission", "node", node.id)
     db.commit()
