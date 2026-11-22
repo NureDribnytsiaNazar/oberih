@@ -7,7 +7,10 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from scripts.provision_node import provision, render_secrets
+from cryptography import x509
+
+from scripts.make_dev_cert import make_certificate
+from scripts.provision_node import provision, render_secrets, resolve_ca
 from scripts.seed import seed, seed_lab3
 
 
@@ -50,3 +53,20 @@ def test_provision_node_rotates_secrets(
         '#define OBERIH_CA_CERT \\\n  "-----BEGIN CERTIFICATE-----\\n" \\\n' in with_ca
     )
     assert '  "-----END CERTIFICATE-----\\n"\n' in with_ca
+
+
+def test_dev_certificate_and_ca_file(tmp_path: Path) -> None:
+    cert_pem, key_pem = make_certificate(["bore.pub", "localhost"])
+    certificate = x509.load_pem_x509_certificate(cert_pem)
+    names = certificate.extensions.get_extension_for_class(
+        x509.SubjectAlternativeName
+    ).value.get_values_for_type(x509.DNSName)
+    assert names == ["bore.pub", "localhost"]
+    assert b"PRIVATE KEY" in key_pem
+
+    ca_file = tmp_path / "server.crt"
+    ca_file.write_bytes(cert_pem)
+    assert resolve_ca("https://bore.pub:1234", "issuer", ca_file, False) == (
+        cert_pem.decode()
+    )
+    assert resolve_ca("https://bore.pub:1234", "issuer", ca_file, True) is None

@@ -221,6 +221,12 @@ void NodeApp::service_wifi(uint32_t now_ms) {
   if (connected != wifi_was_connected_) {
     wifi_was_connected_ = connected;
     log_line("wifi", connected ? "connected" : "disconnected");
+    if (connected) {
+      // Мережа з'явилася: не чекаємо накопиченої затримки повтору (до 60 с),
+      // а одразу перевіряємо зв'язок і надсилаємо буфер.
+      next_heartbeat_ms_ = now_ms;
+      next_events_ms_ = now_ms;
+    }
   }
   if (connected || !network_enabled_ ||
       static_cast<int32_t>(now_ms - next_wifi_attempt_ms_) < 0) {
@@ -279,11 +285,13 @@ void NodeApp::heartbeat_succeeded(const HeartbeatReply& reply,
   missed_polls_ = 0;
   heartbeat_backoff_.reset();
   next_heartbeat_ms_ = now_ms + settings_.poll_interval_s * kMsPerSecond;
-  if (reply.has_config) {
-    apply_server_settings(reply.config, "heartbeat");
-  }
+  // Спершу підписані команди (основний шлях), потім поле config — запасний
+  // шлях для вузла, що пропустив команду set_config (строк дії 60 с минув).
   for (const Command& command : reply.commands) {
     process_command(command, now_ms);
+  }
+  if (reply.has_config) {
+    apply_server_settings(reply.config, "heartbeat");
   }
   if (machine_.mode() != reported_mode_ ||
       reply.facility_mode != mode_name(machine_.mode())) {
@@ -473,6 +481,8 @@ std::string NodeApp::status() {
   text += "config version: " + std::to_string(settings_.config_version) +
           ", last nonce " + std::to_string(last_nonce_) + "\n";
   text += "storage errors: " + std::to_string(buffer_.storage_errors()) + "\n";
+  text += "tls handshakes: " + std::to_string(net_.handshakes()) +
+          ", last request " + std::to_string(net_.last_duration_ms()) + " ms\n";
   return text;
 }
 
@@ -494,6 +504,7 @@ void NodeApp::set_network_enabled(bool enabled) {
     next_wifi_attempt_ms_ = millis();
     next_heartbeat_ms_ = millis();
   } else {
+    net_.disconnect();
     WiFi.disconnect();
   }
 }
