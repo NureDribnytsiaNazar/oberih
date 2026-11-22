@@ -2,9 +2,13 @@
 
 Видає вузлу новий токен пристрою й ключ підпису команд (попередні стають
 недійсними) і записує їх разом з адресою сервера у файл iot/include/secrets.h.
-Для HTTPS-адреси скрипт також визначає кореневий сертифікат ланцюжка сервера
-(тунелю) і вписує його як OBERIH_ROOT_CA для setCACert на ESP32; --no-ca
-пропускає цей крок (тоді прошивку збирають у середовищі esp32dev_devtls).
+Для HTTPS-адреси скрипт також бере з перевіреного ланцюжка TLS сервера
+(тунелю) сертифікат-якір довіри й вписує його як OBERIH_CA_CERT для
+setCACert на ESP32. За замовчуванням якір — безпосередній видавець
+сертифіката сервера (--ca-level issuer): тоді mbedTLS перевіряє лише один
+підпис, і рукопожаття встигає в симуляторі Wokwi. --ca-level root вписує
+корінь (повна перевірка ланцюжка, для справжньої плати). --no-ca пропускає
+цей крок (тоді прошивку збирають у середовищі esp32dev_devtls).
 Файл не потрапляє в git (.gitignore). Скрипт працює напряму з БД, тому
 його запускає адміністратор на машині сервера.
 
@@ -50,11 +54,11 @@ def provision(db: Session, serial: str) -> tuple[Node, str, bytes]:
     return node, token, key
 
 
-def fetch_root_ca(server_url: str) -> str:
-    """PEM кореневого сертифіката з перевіреного ланцюжка сервера.
+def fetch_ca_cert(server_url: str, level: str = "issuer") -> str:
+    """PEM сертифіката-якоря з перевіреного ланцюжка сервера.
 
-    Ланцюжок перевіряється системним сховищем довірених сертифікатів;
-    останній його елемент — корінь, якому має довіряти й вузол.
+    Ланцюжок перевіряється системним сховищем довірених сертифікатів:
+    [0] — сертифікат сервера, [1] — його видавець, [-1] — корінь.
     """
     parts = urlsplit(server_url)
     host = parts.hostname
@@ -66,7 +70,8 @@ def fetch_root_ca(server_url: str) -> str:
         with context.wrap_socket(raw, server_hostname=host) as tls:
             chain = tls.get_verified_chain()
     # SSLSocket повертає ланцюжок як список сертифікатів у форматі DER.
-    return ssl.DER_cert_to_PEM_cert(chain[-1])
+    anchor = chain[1] if level == "issuer" and len(chain) > 1 else chain[-1]
+    return ssl.DER_cert_to_PEM_cert(anchor)
 
 
 def c_string(text: str) -> str:
@@ -80,7 +85,7 @@ def render_secrets(
     token: str,
     key: bytes,
     server_url: str,
-    root_ca: str | None = None,
+    ca_cert: str | None = None,
 ) -> str:
     """Вміст secrets.h для прошивки."""
     content = (
@@ -91,8 +96,8 @@ def render_secrets(
         f'#define OBERIH_DEVICE_TOKEN "{token}"\n'
         f'#define OBERIH_COMMAND_KEY "{key.hex()}"\n'
     )
-    if root_ca:
-        content += f"#define OBERIH_ROOT_CA \\\n{c_string(root_ca)}\n"
+    if ca_cert:
+        content += f"#define OBERIH_CA_CERT \\\n{c_string(ca_cert)}\n"
     return content
 
 
@@ -103,20 +108,26 @@ def main() -> None:
     parser.add_argument("--server-url", required=True)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
-        "--no-ca", action="store_true", help="не визначати кореневий сертифікат"
+        "--ca-level",
+        choices=("issuer", "root"),
+        default="issuer",
+        help="якір довіри: видавець сертифіката сервера або корінь ланцюжка",
+    )
+    parser.add_argument(
+        "--no-ca", action="store_true", help="не вписувати сертифікат-якір"
     )
     args = parser.parse_args()
     server_url = args.server_url.rstrip("/")
-    root_ca = None if args.no_ca else fetch_root_ca(server_url)
+    ca_cert = None if args.no_ca else fetch_ca_cert(server_url, args.ca_level)
     with SessionLocal() as db:
         node, token, key = provision(db, args.serial)
-        content = render_secrets(node, token, key, server_url, root_ca)
+        content = render_secrets(node, token, key, server_url, ca_cert)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(content, encoding="utf-8")
     print(f"Вузол {args.serial} ({node.id}) введено повторно.")
     print(f"Секрети записано у {args.output}")
-    if root_ca is None:
-        print("Без кореневого сертифіката: збирайте esp32dev_devtls.")
+    if ca_cert is None:
+        print("Без сертифіката-якоря: збирайте esp32dev_devtls.")
 
 
 if __name__ == "__main__":

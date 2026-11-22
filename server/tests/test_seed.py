@@ -42,11 +42,11 @@ def test_provision_node_rotates_secrets(
     content = render_secrets(node, token, key, "https://demo.example")
     assert f'#define OBERIH_COMMAND_KEY "{key.hex()}"' in content
     assert '#define OBERIH_SERVER_URL "https://demo.example"' in content
-    assert "OBERIH_ROOT_CA" not in content
+    assert "OBERIH_CA_CERT" not in content
 
     pem = "-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n"
     with_ca = render_secrets(node, token, key, "https://demo.example", pem)
     assert (
-        '#define OBERIH_ROOT_CA \\\n  "-----BEGIN CERTIFICATE-----\\n" \\\n' in with_ca
+        '#define OBERIH_CA_CERT \\\n  "-----BEGIN CERTIFICATE-----\\n" \\\n' in with_ca
     )
     assert '  "-----END CERTIFICATE-----\\n"\n' in with_ca

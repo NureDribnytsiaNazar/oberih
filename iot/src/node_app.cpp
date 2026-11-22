@@ -96,7 +96,7 @@ void NodeApp::begin() {
   net_.begin(OBERIH_DEVICE_TOKEN);
   net_.set_server_url(settings_.server_url);
   if (!net_.tls_ready()) {
-    log_line("net", "no root CA (secrets.h) and no OBERIH_DEV_TLS: offline");
+    log_line("net", "no CA certificate (secrets.h) and no OBERIH_DEV_TLS: offline");
   }
   WiFi.mode(WIFI_STA);
   WiFi.begin(config::kWifiSsid, config::kWifiPassword, config::kWifiChannel);
@@ -246,6 +246,10 @@ void NodeApp::service_heartbeat(uint32_t now_ms) {
   HeartbeatReply reply;
   if (classify_response(result.status) != SendOutcome::kDelivered ||
       !parse_heartbeat(result.body, &reply)) {
+    if (!net_.last_error().empty()) {
+      log_line("net", net_.last_error() + " after " +
+                          std::to_string(net_.last_duration_ms()) + " ms");
+    }
     heartbeat_failed(result.status, millis());
     return;
   }

@@ -1,5 +1,5 @@
 // HTTPS-клієнт вузла: POST JSON на сервер із токеном пристрою.
-// TLS: кореневий сертифікат OBERIH_ROOT_CA із secrets.h (setCACert); режим
+// TLS: сертифікат-якір OBERIH_CA_CERT із secrets.h (setCACert); режим
 // без перевірки сертифіката (setInsecure) — лише з прапорцем OBERIH_DEV_TLS.
 #pragma once
 
@@ -19,12 +19,17 @@ class NetClient {
 
   HttpResult post_json(const char* path, const std::string& body);
 
-  // Чи налаштовано TLS (є кореневий сертифікат або режим розробки).
+  // Чи налаштовано TLS (є сертифікат-якір або режим розробки).
   bool tls_ready() const { return tls_ready_; }
+  // Опис останньої помилки з'єднання (текст mbedTLS) і тривалість запиту.
+  const std::string& last_error() const { return last_error_; }
+  uint32_t last_duration_ms() const { return last_duration_ms_; }
 
  private:
   WiFiClientSecure tls_;
   std::string server_url_;
   std::string device_token_;
   bool tls_ready_ = false;
+  std::string last_error_;
+  uint32_t last_duration_ms_ = 0;
 };
