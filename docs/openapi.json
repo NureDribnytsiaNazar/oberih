@@ -8670,6 +8670,19 @@
           "enabled": {
             "type": "boolean",
             "title": "Enabled"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At",
+            "description": "Останній виконаний запуск (UTC)"
           }
         },
         "type": "object",

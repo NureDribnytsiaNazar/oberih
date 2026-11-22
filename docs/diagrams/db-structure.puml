@@ -182,6 +182,7 @@ entity "schedules" as schedules {
   * days_mask : smallint
   * local_time : time without time zone
   * enabled : boolean
+    last_run_at : timestamp with time zone
 }
 
 entity "test_scenarios" as test_scenarios {

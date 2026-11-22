@@ -199,6 +199,7 @@ erDiagram
         string action
         smallint days_mask
         time local_time
+        timestamptz last_run_at
     }
     NOTIFICATION_SETTINGS {
         uuid id PK
@@ -248,6 +249,7 @@ erDiagram
 | `0002_tariffs_triggers_indexes` | Тарифні плани; тригер `forbid_log_change` для `arming_log`, `alarm_acknowledgements`, `audit_log`; індекси `ix_alarms_facility_status`, `ix_audit_log_entity`; унікальний `uq_nodes_device_token_hash` |
 | `0003_business_logic` | Статус тривоги `cancelled`; `users.blocked_at` і `users.time_format`; `scenario_runs.mismatches`; індекс `ix_events_dedup_window`; ключ `uq_events_dedup_key` знову вважає NULL різними (службові події вузла) |
 | `0004_iot_commands` | `nodes.debounce_ms`, `pir_lockout_s`, `config_version`, `command_key` з обмеженнями CHECK; таблиця `node_commands` з `uq_node_commands_node_nonce` та індексом за `node_id` |
+| `0005_schedule_runs` | `schedules.last_run_at` — момент останнього виконаного запуску розкладу |
 
 Повна структура таблиць зі стовпцями й типами — на діаграмі
 [`diagrams/db-structure.png`](diagrams/db-structure.png). Її генерує скрипт
