@@ -221,6 +221,12 @@ void NodeApp::service_wifi(uint32_t now_ms) {
   if (connected != wifi_was_connected_) {
     wifi_was_connected_ = connected;
     log_line("wifi", connected ? "connected" : "disconnected");
+    if (connected) {
+      // Мережа з'явилася: не чекаємо накопиченої затримки повтору (до 60 с),
+      // а одразу перевіряємо зв'язок і надсилаємо буфер.
+      next_heartbeat_ms_ = now_ms;
+      next_events_ms_ = now_ms;
+    }
   }
   if (connected || !network_enabled_ ||
       static_cast<int32_t>(now_ms - next_wifi_attempt_ms_) < 0) {
