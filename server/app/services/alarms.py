@@ -23,6 +23,7 @@ from app.models.users import User
 from app.pagination import PageParams, paginate
 from app.schemas.events import AcknowledgeRequest
 from app.services.access import Permission, require_access
+from app.services import commands
 from app.services.alarm_store import get_open_alarm
 from app.services.arming import transition
 from app.services.reauth import confirm_action
@@ -127,3 +128,5 @@ def _reset_facility(
     if facility.mode not in ALARM_MODES or get_open_alarm(db, facility.id):
         return
     transition(db, facility, ModeTrigger.DISARM, ActionSource.API, user.id, method)
+    # Вузли теж мають вимкнути сирену: підписана команда зняття (ІК-7).
+    commands.enqueue_mode(db, facility)

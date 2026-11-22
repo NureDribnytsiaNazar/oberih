@@ -260,3 +260,31 @@ def test_owner_sees_command_queue(
     assert command["status"] == "pending"
     _heartbeat(client, device)
     assert client.get(url, headers=owner).json()[0]["status"] == "delivered"
+
+
+def test_resolving_last_alarm_sends_disarm_to_node(
+    client: TestClient,
+    owner: dict[str, str],
+    facility_id: str,
+    device: dict[str, Any],
+) -> None:
+    occurred = datetime.now(UTC).isoformat()
+    tamper = {
+        "events": [
+            {"channel": 3, "event_type": "tamper", "seq": 1, "occurred_at": occurred}
+        ]
+    }
+    client.post(f"{API}/device/events", json=tamper, headers=device["headers"])
+    alarms = client.get(
+        f"{API}/facilities/{facility_id}/alarms",
+        params={"status": "open"},
+        headers=owner,
+    ).json()["items"]
+    body = {"action": "resolve", "confirmation": confirmation()}
+    response = client.post(
+        f"{API}/alarms/{alarms[0]['id']}/acknowledge", json=body, headers=owner
+    )
+    assert response.status_code == 200, response.text
+
+    [command] = _heartbeat(client, device)["commands"]
+    assert command["type"] == "disarm"
