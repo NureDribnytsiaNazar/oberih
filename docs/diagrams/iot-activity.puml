@@ -1,7 +1,8 @@
 @startuml iot-activity
 ' Діаграма діяльності IoT-вузла: один прохід NodeApp::loop().
 ' Відповідає коду iot/src/node_app.cpp (poll_contacts, poll_pir, record_event,
-' service_events, service_heartbeat, process_command, update_indicators).
+' service_wifi, service_events, service_heartbeat, process_command,
+' update_indicators) і net_client.cpp (одне з'єднання TLS, keep-alive).
 skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam ActivityBackgroundColor #F8F8F8
@@ -29,8 +30,13 @@ repeat
     EventBuffer::push() — seq, час, NVS
   end note
   :ModeMachine::tick(): завершення\nзатримки виходу чи входу;
+  :service_wifi(): перепідключення;
+  if (Wi-Fi щойно підключився?) then (так)
+    :heartbeat і надсилання буфера —\nодразу, без накопиченої затримки;
+  else (ні)
+  endif
   if (Є події, годинник синхронізовано,\nчас наступної спроби настав?) then (так)
-    :POST /device/events (пакет до 20)\nNetClient::post_json (HTTPS);
+    :POST /device/events (пакет до 20)\nNetClient::post_json: HTTPS, одне з'єднання\n(keep-alive; рукопожаття TLS лише після обриву);
     switch (classify_response())
     case (2xx)
       :EventBuffer::pop(); Backoff::reset();
@@ -45,8 +51,7 @@ repeat
     :POST /device/heartbeat: режим, config_version,\nbuffer_depth, acked_command_ids;
     if (Відповідь 2xx?) then (так)
       :NodeClock::sync(server_epoch);\nadopt_server_seq(last_seq);\nmissed_polls = 0;
-      :apply_server_config(config)\nякщо версія більша;
-      repeat :Наступна команда;
+      repeat :Наступна підписана команда;
         :CommandVerifier::verify():\nHMAC (сталий час), |now − issued_at| <= 60 c,\nnonce > останнього;
         if (accepted?) then (так)
           :execute_command(): ModeMachine::force()\nабо set_config; nonce -> NVS;
@@ -55,6 +60,7 @@ repeat
         endif
         :id -> acked_command_ids\n(у наступному heartbeat);
       repeat while (Ще команди?) is (так)
+      :apply_server_config(config) — запасний шлях\n(якщо set_config пропущено), лише більша версія;
     else (ні)
       :missed_polls++; затримка Backoff;
       if (missed_polls >= 3?) then (так)

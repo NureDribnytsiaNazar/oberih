@@ -2,13 +2,14 @@
 ' Діаграма взаємодії: фоновий виконавець таймерів (app/worker.py).
 skinparam shadowing false
 skinparam defaultFontName Arial
-title Фоновий виконавець: таймери, недоступні вузли, сертифікати
+title Фоновий виконавець: таймери, розклади, недоступні вузли, сертифікати
 
 participant "FastAPI lifespan\nmain.py" as Life
 participant "worker.run_worker" as Worker
 participant "worker.run_once\n(окремий потік)" as Once
 participant "timers.process_timers" as Timers
 participant "arming.apply_due_timer\n+ transition" as Arming
+participant "schedules.run_due_schedules" as Sched
 participant "nodes.detect_offline" as Nodes
 participant "certificates.mark_expired" as Certs
 participant "retention.purge_expired_data" as Purge
@@ -23,6 +24,13 @@ loop кожні WORKER_INTERVAL_S секунд (5 с)
     Timers -> Arming : apply_due_timer(db, facility, now)
     Arming -> Arming : expired_delay_trigger()\nexit_delay -> armed_away\nentry_delay -> alarm
     Arming -> Db : INSERT arming_log (source = system)
+  end
+  Timers -> Sched : run_due_schedules(db, now)
+  Sched -> Db : SELECT увімкнені розклади + часовий пояс об'єкта
+  loop для розкладу, час якого настав (маска днів, вікно 10 хв, last_run_at)
+    Sched -> Arming : transition(arm_away | arm_home | disarm, source = schedule)
+    note right : зняття не виконується\nв entry_delay і alarm
+    Sched -> Db : last_run_at = момент запуску;\nINSERT node_commands (підписана команда вузлам)
   end
   Timers -> Nodes : detect_offline(db, now)
   Nodes -> Db : online-вузли з now − last_seen > T(опит.) × N(проп.)
