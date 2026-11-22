@@ -87,6 +87,28 @@ def test_full_backup_restore_roundtrip(
     assert "backup.restore" in actions
 
 
+def test_full_restore_keeps_backup_registry(
+    client: TestClient, admin: dict[str, str], backup_dir: Path
+) -> None:
+    """Реєстр копій не входить у копію і після відновлення зберігається повністю.
+
+    TRUNCATE ... CASCADE через зовнішній ключ backups.created_by -> users
+    очищав і реєстр, тож копії ставали недоступними через API.
+    """
+    first = create(client, admin)
+    second = create(client, admin)
+
+    response = restore(client, admin, first["id"])
+    assert response.status_code == 200, response.text
+
+    listed = client.get(f"{API}/admin/backups", headers=admin).json()["items"]
+    assert {first["id"], second["id"]} <= {item["id"] for item in listed}
+    # Копію можна завантажити й відновити ще раз.
+    download = client.get(f"{API}/admin/backups/{first['id']}/download", headers=admin)
+    assert download.status_code == 200
+    assert restore(client, admin, first["id"]).status_code == 200
+
+
 def test_restore_requires_confirmation(
     client: TestClient, admin: dict[str, str]
 ) -> None:

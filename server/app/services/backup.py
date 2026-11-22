@@ -164,7 +164,15 @@ def _read_verified(record: Backup, backup_dir: Path) -> dict[str, Any]:
 def _restore_full(
     db: Session, tables: dict[str, list[dict[str, Any]]]
 ) -> dict[str, int]:
-    """Повна заміна даних: TRUNCATE (не зачіпає тригери рядків) і вставка."""
+    """Повна заміна даних: TRUNCATE (не зачіпає тригери рядків) і вставка.
+
+    CASCADE через backups.created_by -> users очищає й реєстр копій, якого в
+    копії немає (EXCLUDED_TABLES), тому реєстр зберігається до TRUNCATE і
+    повертається після вставки. Автора, якого немає серед відновлених
+    користувачів, обнуляємо (як ON DELETE SET NULL).
+    """
+    registry = Base.metadata.tables["backups"]
+    saved_registry = [dict(row) for row in db.execute(select(registry)).mappings()]
     targets = _tables(BackupKind.FULL)
     names = ", ".join(table.name for table in targets)
     db.execute(text(f"TRUNCATE {names} RESTART IDENTITY CASCADE"))
@@ -175,6 +183,12 @@ def _restore_full(
             db.execute(table.insert(), rows)
         _reset_identity(db, table)
         counts[table.name] = len(rows)
+    if saved_registry:
+        user_ids = set(db.scalars(select(User.id)))
+        for row in saved_registry:
+            if row["created_by"] not in user_ids:
+                row["created_by"] = None
+        db.execute(registry.insert(), saved_registry)
     return counts
 
 
